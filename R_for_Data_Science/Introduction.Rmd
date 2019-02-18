@@ -1,0 +1,31 @@
+---
+title: "Notebook with the book 'R for Data Science'"
+output:
+  html_document:
+    df_print: paged
+---
+
+This is a [R for Data Science](https://r4ds.had.co.nz/introduction.html) Notebook. 
+
+## Introduction
+
+A typical data science project flow:
+
+Import data -> Tidy -> Understand{ Transform <-> Visualise <-> Model } -> Communicate
+
+---
+The Tidyverse packages
+```{r}
+if(!require(tidyverse)) install.packages('tidyverse')
+library(tidyverse)
+```
+Other packages
+```{r}
+# if(!require(nycflights13)) install.packages('nycflights13')
+# if(!require(gapminder)) install.packages('gapminder')
+# if(!require(Lahman)) install.packages('Lahman')
+# library(nycflights13)
+# library(gapminder)
+# library(Lahman)
+```
+
