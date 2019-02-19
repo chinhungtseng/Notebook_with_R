@@ -4,12 +4,34 @@ if(!require(sparklyr)) install.packages('sparklyr')
 library(sparklyr)
 spark_install(version = "2.1.0")
 
+conf <- spark_config()
+conf$`sparklyr.cores.local` <- 4
+conf$`sparklyr.shell.driver-memory` <- "16G"
+conf$spark.memory.fraction <- 0.9
+
+sc <- spark_connect(master = "local", 
+                    version = "2.1.0",
+                    config = conf)
+
 # Connecting to Spark
 ## You can connect to both local instances of Spark as well as remote Spark clusters.
-## sc <- spark_connect(master = "yarn-client")
+# conf <- spark_config()   # Load variable with spark_config()
+# conf$spark.executor.memory <- "16G" # Use `$` to add or set values
+# sc <- spark_connect(master = "yarn-client", 
+#                     config = conf)  # Pass the conf variable
 
-## Connect to a local instance of Spark
-sc <- spark_connect(master = "local")
+# conf <- spark_config()
+# 
+# conf$spark.executor.memory <- "300M"
+# conf$spark.executor.cores <- 2
+# conf$spark.executor.instances <- 3
+# conf$spark.dynamicAllocation.enabled <- "false"
+# 
+# sc <- spark_connect(master = "yarn-client", 
+#                     spark_home = "/usr/lib/spark/",
+#                     version = "1.6.0",
+#                     config = conf)
+
 
 # Using dplyr
 if(!require(nycflights13)) install.packages('nycflights13')
