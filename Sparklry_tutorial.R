@@ -21,7 +21,6 @@ sc <- spark_connect(master = "local",
 #                     config = conf)  # Pass the conf variable
 
 # conf <- spark_config()
-# 
 # conf$spark.executor.memory <- "300M"
 # conf$spark.executor.cores <- 2
 # conf$spark.executor.instances <- 3
@@ -29,7 +28,7 @@ sc <- spark_connect(master = "local",
 # 
 # sc <- spark_connect(master = "yarn-client", 
 #                     spark_home = "/usr/lib/spark/",
-#                     version = "1.6.0",
+#                     version = "2.1.0",
 #                     config = conf)
 
 
