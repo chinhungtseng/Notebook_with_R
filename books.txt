@@ -1,0 +1,15 @@
+# Books
+## 1. Hands-On Programming with R
+## 2. R for Data Science
+## 3. Advenced R
+## 4. Others...
+
+https://bookdown.org
+
+# Visualization: geom extension packages
+https://www.ggplot2-exts.org/
+
+# Cheatsheet for R
+http://rstudio.com/cheatsheets
+
+
