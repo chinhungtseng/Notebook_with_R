@@ -38,6 +38,11 @@ ggplot(data = mpg) + geom_point(mapping = aes(x = class, y = drv)) # (class vs d
 
 ## 3.3 Aesthetic mappings
 
+?aes
+## Aesthetic mappings describe how variables in the data are mapped 
+## to visual properties (aesthetics) of geoms. Aesthetic mappings can 
+## be set in ggplot2() and in individual layers.
+
 ###You can add a third variable, like class, 
 ###to a two dimensional scatterplot by mapping it to an aesthetic
 
@@ -51,8 +56,8 @@ ggplot(data = mpg) + geom_point(mapping = aes(x = displ, y = hwy, shape = class)
 ### 1. What’s gone wrong with this code? Why are the points not blue?
 ggplot(data = mpg) + 
   geom_point(mapping = aes(x = displ, y = hwy, color = "blue"))
-
 #### Need to put color attribute outside the aes()
+### Because the color argument was set within aes(), not geom_point()
 ggplot(data = mpg) + 
   geom_point(mapping = aes(x = displ, y = hwy), color = "blue")
 
@@ -60,11 +65,23 @@ ggplot(data = mpg) +
 ### (Hint: type ?mpg to read the documentation for the dataset). 
 ### How can you see this information when you run mpg?
 str(mpg)
-  
+#### Categorical: manufacturer, model, trans, drv, fl, class
+#### Continuous: displ, cyl, cty, hwy
+
 ### 3. Map a continuous variable to color, size, and shape. 
 ### How do these aesthetics behave differently for categorical vs. continuous variables?
+#### color:
 ggplot(data = mpg) + 
-  geom_point(mapping = aes(x = displ, y = hwy, color = manufacturer))
+  geom_point(mapping = aes(x = displ, y = hwy, color = cty))
+
+#### shape:
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, shape = cty))
+#### Error: A continuous variable can not be mapped to shape
+
+#### size: 
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, size = cty))
 
 ### 4. What happens if you map the same variable to multiple aesthetics?
 ggplot(data = mpg) + 
@@ -300,6 +317,9 @@ ggplot(data = demo) +
 ggplot(data = diamonds) + 
   geom_bar(mapping = aes(x = cut, y = ..prop.., group = 1))
 
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, y = stat(prop), group = 1))
+
 ## use stat_summary(), which summarises the y values for each unique x value
 ggplot(data = diamonds) + 
   stat_summary(
@@ -361,12 +381,175 @@ ggplot(data = diamonds) +
   geom_bar(mapping = aes(x = cut, fill = color, y = ..prop.., group = 1))
 
 # 3.8 Position adjustments
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, color = cut))
 
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, fill = cut))
 
+## The stacking is performed automatically by the position adjustment 
+## specified by the position argument. 
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, fill = clarity))
 
+## position = "identity"
+ggplot(data = diamonds, mapping = aes(x = cut, fill = clarity)) + 
+  geom_bar(alpha = 1/5, position = 'identity')
 
+ggplot(data = diamonds, mapping = aes(x = cut, color = clarity)) +
+  geom_bar(fill = NA, position = 'identity')
+## The identity position adjustment is more useful for 2d geoms, l
+## ike points, where it is the default
 
+## position = "fill"
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, fill = clarity), position = 'fill')
 
+## position = "dodge"
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut ,fill = clarity), position = 'dodge')
+
+## position = "jitter"
+### It adds a small amount of random variation to the location of each point, 
+### and is a useful way of handling overplotting caused by discreteness in smaller datasets.
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy), position = 'jitter')
+## To learn more about a position adjustment, 
+## look up the help page associated with each adjustment: 
+?position_dodge
+?position_fill
+?position_identity
+?position_jitter
+?position_stack
+
+# 3.8.1 Exercises
+## 1. What is the problem with this plot? How could you improve it?
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) + 
+  geom_point()
+
+### Many of the data points overlap
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) + 
+  geom_point(position = 'jitter')
+
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) + 
+  geom_jitter()
+
+## 2. What parameters to geom_jitter() control the amount of jittering?
+### width and height
+
+## 3. Compare and contrast geom_jitter() with geom_count().
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) + 
+  geom_jitter()
+
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) + 
+  geom_count()
+### This is a variant geom_point() that counts the number of observations at each location,
+### then maps the count to point area. It useful when you have discrete data and overplotting.
+
+## 4. What’s the default position adjustment for geom_boxplot()? 
+## Create a visualisation of the mpg dataset that demonstrates it.
+?geom_boxplot
+### The default position is 'dodge2'
+ggplot(data = mpg, mapping = aes(x = class, y = hwy, color = drv)) + 
+  geom_boxplot()
+
+ggplot(data = mpg, mapping = aes(x = manufacturer, y = hwy, color = manufacturer)) + 
+  geom_boxplot()
+
+# Coordernate systems
+## coord_flip(): switches the x and y axes.
+##  if you want horizontal boxplots. It’s also useful for long labels: 
+## it’s hard to get them to fit without overlapping on the x-axis.
+ggplot(data = mpg, mapping = aes(x = class, y = hwy)) +
+  geom_boxplot()
+
+ggplot(data = mpg, mapping = aes(x = class, y = hwy)) +
+  geom_boxplot() +
+  coord_flip() # switch the x and y axes
+
+## coord_quickmap(): sets the aspect ratio correctly for maps
+if(!require(maps)) install.packages('maps')
+library(maps)
+
+nz <- map_data("nz")
+
+ggplot(data = nz, mapping = aes(x = long, y = lat, group = group)) + 
+  geom_polygon(fill = 'white', color = 'black')
+
+ggplot(data = nz) + 
+  geom_polygon(mapping = aes(x = long, y = lat, group = group), fill = 'white', color = 'black')
+
+ggplot(data = nz, mapping = aes(x = long, y = lat, group = group)) +
+  geom_polygon(fill = 'white', color = 'black') +
+  coord_quickmap()
+
+## coord_polar(): uses polar coordinates. Polar coordinates reveal an interesting 
+## connection between a bar chart and a Coxcomb chart.
+bar <- ggplot(data = diamonds) + 
+  geom_bar(
+    mapping = aes(x = cut, fill = cut), 
+    show.legend = FALSE, 
+    width = 1
+  ) + 
+  theme(aspect.ratio = 1) +
+  labs(x = NULL, y = NULL)
+
+bar + coord_flip()
+bar + coord_polar()
+
+# 3.9.1 Exercises
+## 1. Turn a stacked bar chart into a pie chart using coord_polar().
+ggplot(data = mpg) + 
+  geom_bar(mapping = aes(x = class, y = stat(count), fill = model)) + 
+  coord_polar()
+
+ggplot(data = mpg, mapping = aes(x = factor(1), fill = class)) +
+  geom_bar(width = 1) +
+  coord_polar(theta = "y")
+
+## 2. What does labs() do? Read the documentation.
+?labs() 
+### adds labels to the graph. You can add a title, subtitle, 
+### and a label for the xand y axes, as well as a caption.
+
+## 3. What’s the difference between coord_quickmap() and coord_map()?
+?coord_map
+?coord_quickmap
+### coord_map projects a portion of the earth, which is approximately 
+### spherical, onto a flat 2D plane using any projection defined 
+### by the mapproj package. Map projections do not, in general, 
+### preserve straight lines, so this requires considerable computation.
+### coord_quickmap is a quick approximation that does preserve straight lines. 
+### It works best for smaller areas closer to the equator.
+  
+## 4. What does the plot below tell you about the relationship between city and highway mpg? 
+## Why is coord_fixed() important? What does geom_abline() do?
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) +
+  geom_point() + 
+  geom_abline() +
+  coord_fixed()
+
+?coord_fixed
+?geom_abline
+
+### The relationships is approximately linear, though overall cars have slightly better 
+### highway mileage than city mileage. But using coord_fixed(), the plot draws equal 
+### intervals on the x and y axes so they are directly comparable. 
+### geom_abline() draws a line that, by default, has an intercept of 0 and slope of 1. 
+### This aids us in our discovery that automobile gas efficiency is on average slightly
+### higher for highways than city driving, though the slope of the relationship
+### is still roughly 1-to-1.
+
+# 3.10 The layered grammar of graphics
+# ggplot(data = <DATA>) + 
+#   <GEOM_FUNCTION>(
+#     mapping = aes(<MAPPINGS>),
+#     stat = <STAT>, 
+#     position = <POSITION>
+#   ) +
+#   <COORDINATE_FUNCTION> +
+#   <FACET_FUNCTION>
+  
 
 
 
