@@ -657,7 +657,7 @@ flights
 ## each function from operating on the entire dataset to operating on it group-by-group
 
 ## 1. The first argument is a data frame.
-## 2. he subsequent arguments describe what to do with the data frame, 
+## 2. The subsequent arguments describe what to do with the data frame, 
 ##    using the variable names (without quotes).
 ## 3. The result is a new data frame.
 
@@ -1350,32 +1350,551 @@ flights %>%
   arrange(desc(mean_delay))
 
 ### Challenge
-
-
-
-
+flights %>% 
+  group_by(carrier, dest) %>% 
+  summarise(mean_delay = mean(arr_delay, na.rm = TRUE)) %>% 
+  group_by(carrier) %>% 
+  summarise(mean_delay_mad = mad(mean_delay, na.rm = TRUE)) %>% 
+  arrange(desc(mean_delay_mad))
+### https://cfss.uchicago.edu/r4ds_solutions.html#5_data_transformation
 
 ## 6. What does the sort argument to count() do. When might you use it?
+### if TRUE will sort output in descending order of n
+### set this argument, then without use arrange() function
 
+# 5.7 Grouped mutates(and filters)
+## Grouping is most useful in conjunction with summarise(), 
+## but you can also do convenient operations with mutate() and filter()
 
+## find the worst members of each group
+flights_sml %>% 
+  group_by(year, month, day) %>% 
+  filter(rank(desc(arr_delay)) < 10)
 
+## find all groups bigger than a threshold
+popular_dests <- flights %>% 
+  group_by(dest) %>% 
+  filter(n() > 365)
 
+## Standardise to compute per group metrics
+popular_dests %>% 
+  filter(arr_delay > 0) %>% 
+  mutate(prop_delay = arr_delay / sum(arr_delay)) %>% 
+  select(year:day, dest, arr_delay, prop_delay)
 
+# 5.7.1 Exercises
+## 1. Refer back to the lists of useful mutate and filtering functions. 
+##    Describe how each operation changes when you combine it with grouping.
+flights_sml %>% 
+  group_by(year, month, day) %>% # group our data by year, month, day.
+  filter(rank(desc(arr_delay)) < 10) # sum each day's most arrival delay, rank, and filter top 9
 
+### group_by() which changes the scope of each function from operating on the 
+### entire dataset to operating on it group-by-group
 
+## 2. Which plane (tailnum) has the worst on-time record?
+flights %>% 
+  group_by(tailnum) %>% 
+  summarise(
+    prop_on_time = sum(arr_delay <= 60, na.rm = TRUE) / n(),
+    mean_arr_delay = mean(arr_delay, na.rm = TRUE),
+    flights = n()
+  ) %>% 
+  arrange(prop_on_time, desc(mean_arr_delay))
 
+## 3. What time of day should you fly if you want to avoid delays as much as possible?
+flights %>% 
+  group_by(hour) %>% 
+  summarise(
+    arr_delay = sum(arr_delay > 5, na.rm = TRUE) / n()
+  ) %>% 
+  ggplot(mapping = aes(x = hour, y = arr_delay, fill = arr_delay)) + 
+  geom_col()
 
+## 4. For each destination, compute the total minutes of delay. For each flight, 
+##    compute the proportion of the total delay for its destination.
+flights %>% 
+  filter(!is.na(arr_delay), arr_delay > 0) %>% 
+  group_by(dest) %>% 
+  transmute(
+    arr_delay_total = sum(arr_delay),
+    arr_delay_prop = arr_delay / arr_delay_total
+  )
 
+## 5. Delays are typically temporally correlated: even once the problem that caused 
+##    the initial delay has been resolved, later flights are delayed to allow earlier 
+##    flights to leave. Using lag(), explore how the delay of a flight is related to the
+##    delay of the immediately preceding flight.
+flights %>% 
+  group_by(origin) %>% 
+  arrange(year, month, day, hour, minute) %>% 
+  mutate(dep_delay_lag = lag(dep_delay)) %>% 
+  ggplot(mapping = aes(x = dep_delay_lag, y = dep_delay)) +
+  geom_point() +
+  geom_smooth(se = FALSE)
+
+## 6. Look at each destination. Can you find flights that are suspiciously fast? 
+##    (i.e. flights that represent a potential data entry error). 
+##    Compute the air time a flight relative to the shortest flight to that destination. 
+##    Which flights were most delayed in the air?
+### Reference: https://lokhc.wordpress.com/r-for-data-science-solutions/chapter-5-data-transformation/
+flights %>% 
+  filter(!is.na(air_time)) %>% 
+  group_by(dest) %>% 
+  mutate(
+    mean_of_air_time = mean(air_time, na.rm = TRUE),
+    sd_of_air_time = sd(air_time, na.rm = TRUE),
+    z_scope = (air_time - mean_of_air_time) / sd_of_air_time
+  ) %>% 
+  select(
+    z_scope ,
+    mean_of_air_time, 
+    sd_of_air_time, 
+    air_time, 
+    everything()
+    ) %>% 
+  arrange(z_scope)
+
+## 7. Find all destinations that are flown by at least two carriers. 
+##    Use that information to rank the carriers.
+flights %>% 
+  group_by(dest) %>% 
+  summarise(
+    num_carrier = n_distinct(carrier)
+  ) %>% 
+  filter(num_carrier >= 2) %>% 
+  mutate(rank = dense_rank(desc(num_carrier))) %>% 
+  arrange(desc(num_carrier))
+
+## 8. For each plane, count the number of flights before the first delay of greater than 1 hour.
+flights %>% 
+  filter(!is.na(dep_delay)) %>% 
+  group_by(tailnum) %>% 
+  mutate(
+    max_delay = cummax(dep_delay),
+    less_one_hour = max_delay < 60
+  ) %>% 
+  summarize(count = sum(less_one_hour)) %>% 
+  arrange(desc(count))
 
 # ---------------------------------------------------------------------------------
 # 6 Workflow: scripts
+# 6.1 Running code
+library(dpyr)
+library(nycflights13)
 
+not_cancelled <- flights %>% 
+  filter(!is.na(dep_delay), !is.na(arr_delay))
 
+not_cancelled %>% 
+  group_by(year, month, day) %>% 
+  summarise(mean = mean(dep_delay))
 
+# 6.2 RStudio diagnostics
+## The script editor will also highlight syntax errors with a red squiggly line 
+## and a cross in the sidebar
 
+# 6.3 Practice
+## Go to the RStudio Tips twitter account, https://twitter.com/rstudiotips 
+## and find one tip that looks interesting. Practice using it!
+
+## What other common mistakes will RStudio diagnostics report? 
+## Read https://support.rstudio.com/hc/en-us/articles/205753617-Code-Diagnostics to find out.
 
 # ---------------------------------------------------------------------------------
 # 7 Exploratory Data Analysis
+## 7.1 Introduction
+## This chapter will show you how to use visualisation and transformation to explore your data 
+## in a systematic way, a task that statisticians call exploratory data analysis, or EDA for short. 
+## EDA is an iterative cycle. You:
+## (1) Generate questions about your data.
+## (2) Search for answers by visaulising, transfoming and modeling your data.
+## (3) Use what you learn to refine your questions and/or generate a new questions.
+
+## EDA is not a formal process with a strict set of rules. More than anything, EDA is a state of mind.
+## Data cleaning is just one application of EDA: you ask questions about whether your data meets your expectations or not. 
+## To do data cleaning, you’ll need to deploy all the tools of EDA: visualisation, transformation, and modelling.
+
+# 7.1.1 Prerequisites
+## In this chapter we’ll combine what you’ve learned about dplyr and ggplot2 to interactively ask questions, 
+## answer them with data, and then ask new questions.
+library(tidyverse)
+
+# 7.2 Questions
+## Your goal during EDA is to develop an understanding of your data.
+## EDA is fundamentally a creative process. And like most creative processes, 
+## the key to asking quality questions is to generate a large quantity of questions.
+
+## There two types of questions will always be useful for making discoveries within your data:
+## (1) What type of variation occurs within my variables?
+## (2) What type of covariation occurs between my variables?
+
+## To make the discussion easier, let’s define some terms:
+## (1) A variable is a quantity, quality, or property that you can measure.
+## (2) A value is the state of a variable when you measure it.
+##     The value of a variable may change from measurement to measurement.
+## (3) A observation is a set of measurements made under similiar conditions
+##     (you usually make all of the measurements in an observation at the same time and on the same object).
+##     An observation will contain several values, each associated with a different variable.
+## (4) Tabular data is a set of values, each associated with a variable and an observation.
+##     Tabular data is tidy if each value is placed in its own 'cell', each variable in its own column, 
+##     and each obsevation in its own row.
+
+# 7.3 Variation
+## Variation is the tendency of the values of a variable to change from measurement to measurement. 
+
+# 7.3.1 Visualising distributions
+## A variable is categorical if it can only take one of a small set of values. 
+## In R, categorical variables are usually saved as factors or character vectors.
+## To examine the distribution of a categorical variable, use a bar chart:
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut))
+
+## The height of the bars displays how many observations occurred with each x value. 
+## You can compute these values manually with dplyr::count():
+diamonds %>% count(cut)
+
+## A variable is continuous if it can take any of an infinite set of ordered values. 
+## Numbers and date-times are two examples of continuous variables.
+## To examine the distribution of a continuous variable, use a histogram:
+ggplot(data = diamonds) + 
+  geom_histogram(mapping = aes(x = carat), binwidth = 0.5)
+
+diamonds %>% count(cut_width(carat, 0.5))
+## A histogram divides the x-axis into equally spaced bins and then uses the height of 
+## a bar to display the number of observations that fall in each bin. 
+
+smaller <- diamonds %>% filter(carat < 3)
+ggplot(data = smaller, mapping = aes(x = carat)) + 
+  geom_histogram(binwidth = 0.1)
+
+## If you wish to overlay multiple histograms in the same plot, 
+## I recommend using geom_freqpoly() instead of geom_histogram()
+## It’s much easier to understand overlapping lines than bars.
+ggplot(data = smaller, mapping = aes(x = carat, color = cut)) + 
+  geom_freqpoly(binwidth = 0.1)
+
+# 7.3.2 Typical values
+## 1. Which values are the most common? Why?
+## 2. Which values are rare? Why? Does that match your expectations?
+## 3. Can you see any unusual patterns? What might explain them?
+
+# 7.3.3 Unusual values
+## Outliers are observations that are unusual; data points that don’t seem to fit the pattern. 
+## Sometimes outliers are data entry errors; other times outliers suggest important new science. 
+ggplot(data = diamonds) + 
+  geom_histogram(mapping = aes(x = y), binwidth = 0.5)
+
+## To make it easy to see the unusual values, 
+## we need to zoom to small values of the y-axis with coord_cartesian():
+ggplot(data = diamonds) +
+  geom_histogram(mapping = aes(x = y), binwidth = 0.5) +
+  coord_cartesian(ylim = c(0, 50))
+
+unusual <- diamonds %>% 
+  filter(y < 3 | y > 20) %>% 
+  select(price, x, y, z) %>% 
+  arrange(x)
+
+unusual
+## The y variable measures one of the three dimensions of these diamonds, in mm. 
+## We know that diamonds can’t have a width of 0mm, so these values must be incorrect. 
+## We might also suspect that measurements of 32mm and 59mm are implausible: 
+## those diamonds are over an inch long, but don’t cost hundreds of thousands of dollars!
+
+# 7.3.4 Exercises
+# 1. Explore the distribution of each of the x, y, and z variables in diamonds. What do you learn? 
+#    Think about a diamond and how you might decide which dimension is the length, width, and depth.
+?diamonds
+## x: length
+## y: width
+## z: depth
+ggplot(data = diamonds) + 
+  geom_histogram(mapping = aes(x = x), binwidth = .1)
+
+ggplot(data = diamonds) + 
+  geom_histogram(mapping = aes(x = y), binwidth = .1)
+
+ggplot(data = diamonds) +
+  geom_histogram(mapping = aes(x = z), binwidth = .1)
+
+# 2. Explore the distribution of price. Do you discover anything unusual or surprising? 
+#    (Hint: Carefully think about the binwidth and make sure you try a wide range of values.)
+diamonds %>% select(price) %>% range()
+
+ggplot(data = diamonds, mapping = aes(x = price)) + 
+  geom_histogram(binwidth = 20) + 
+  scale_x_continuous(breaks = c(500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000))
+
+# 3. How many diamonds are 0.99 carat? How many are 1 carat? What do you think is the cause of the difference?
+diamonds %>% 
+  filter(between(carat, 0.97, 1.03)) %>% 
+  group_by(carat) %>% 
+  summarise(count = n()) %>% 
+  ggplot(mapping = aes(x = carat, y = count, fill = carat)) +
+  stat_identity(geom = 'bar') # == geom_bar(stat = "identity")
+## the count of 0.99 carat is 23 and 1 carat is 1558, the different maybe is seller or buyer just want 1 carat.
+
+# 4. Compare and contrast coord_cartesian() vs xlim() or ylim() when zooming in on a histogram. 
+#    What happens if you leave binwidth unset? What happens if you try and zoom so only half a bar shows?
+## step 1:
+?coord_cartesian
+## step 2:
+args(coord_cartesian)
+
+## original
+ggplot(data = diamonds, mapping = aes(x = price)) + 
+  geom_histogram(binwidth = 20)
+
+## use coord_cartesian()
+### some data beyond those limits are still being shown. 
+ggplot(data = diamonds, mapping = aes(x = price)) +
+  geom_histogram(binwidth = 20) +
+  coord_cartesian(xlim = c(500, 5000))
+
+## unset binwidth
+ggplot(data = diamonds, mapping = aes(x = price)) +
+  geom_histogram() +
+  coord_cartesian(xlim = c(500, 5000))
+
+## use xlim() or ylim()
+ggplot(data = diamonds) + 
+  geom_histogram(mapping = aes(x = price), binwidth = 20) +
+  xlim(c(500, 5000))
+
+# 7.4 Missing value
+## If you’ve encountered unusual values in your dataset, 
+## and simply want to move on to the rest of your analysis, you have two options.
+
+## 1. Drop the entire row with the strange values: ******* not recommand ********
+diamonds2 <- diamonds %>% 
+  filter(between(y, 3, 20))
+
+## 2. Replacing the unusual values with missing values.
+## The easiest way to do this is to use mutate() to replace the variable with a modified copy. 
+## You can use the ifelse() function to replace unusual values with NA:
+diamonds2 <- diamonds %>% 
+  mutate(y = ifelse(y < 3 | y > 20, NA, y))
+
+## ggplot2 subscribes to the philosophy that missing values should never silently go missing.
+## ggplot2 doesn’t include them in the plot, but it does warn that they’ve been removed:
+ggplot(data = diamonds2, mapping = aes(x = x, y = y)) +
+  geom_point()
+### Warning message: Removed 9 rows containing missing values (geom_point). 
+## To suppress that warning, set na.rm = TRUE:
+ggplot(data = diamonds2, mapping = aes(x = x, y = y)) + 
+  geom_point(na.rm = TRUE)
+
+## Other times you want to understand what makes observations with missing values 
+## different to observations with recorded values.
+nycflights13::flights %>% 
+  mutate(
+    cancelled = is.na(dep_time),
+    sched_hour = sched_dep_time %/% 100,
+    sched_min = sched_dep_time %% 100,
+    sched_dep_time = sched_hour + sched_min / 60
+  ) %>% 
+  ggplot(mapping = aes(x = sched_dep_time)) + 
+  geom_freqpoly(mapping = aes(color = cancelled), binwidth = 1/4)
+
+# 7.4.1 Exercises
+# 1. What happens to missing values in a histogram? 
+#    What happens to missing values in a bar chart? Why is there a difference?
+diamonds2 <- diamonds %>% 
+  mutate(y = ifelse(y < 3 | y > 20, NA, y))
+
+ggplot(data = diamonds2) +
+  geom_histogram(mapping = aes(x = y), binwidth = 0.1)
+## Warning message: Removed 9 rows containing non-finite values (stat_bin). 
+
+ggplot(data = data.frame(type = c('A', 'A', 'B', 'B', 'B', NA))) + 
+  geom_bar(mapping = aes(x = type))
+## In geom_bar(), the missing values are counted and treated as a category.
+
+## I think the different between geom_histogram and geom_bar is one plot is 
+## for continuour variable and the other is for categorical variable, 
+## so in geom_bar, NA value is one kind of category.
+
+# 2. What does na.rm = TRUE do in mean() and sum()?
+test_na <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, NA, NA)
+
+sum(test_na)
+sum(test_na, na.rm = TRUE)
+
+mean(test_na)
+mean(test_na, na.rm = TRUE)
+## na.rm = TRUE: will do logical test, if the value is NA, then it will be removed 
+## when do sum or mean compution.
+
+# 7.5 Covariation
+## If variation describes the behavior within a variable, 
+## covariation describes the behavior between variables.
+
+## Covariation is the tendency for the values of two or 
+## more variables to vary together in a related way
+
+# A categorical and continuous variable
+
+ggplot(data = diamonds, mapping = aes(x = price)) + 
+  geom_freqpoly(mapping = aes(color = cut), binwith = 500)
+## It’s hard to see the difference in distribution 
+## because the overall counts differ so much
+
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut))
+
+## Instead of displaying count, we’ll display density, 
+## which is the count standardised so that the area under each frequency polygon is one.
+ggplot(data = diamonds, mapping = aes(x = price, y = ..density..)) +
+  geom_freqpoly(mapping = aes(color = cut), binwidth = 500)
+
+# Another alternative to display the distribution of a continuous variable broken down by a categorical variable is the boxplot. 
+# A boxplot is a type of visual shorthand for a distribution of values that is popular among statisticians. 
+
+# Each boxplot consists of:
+# 1. A box that stretches from the 25th percentile of the distribution to the 75th percentile, a distance known as the interquartile range (IQR). 
+#    In the middle of the box is a line that displays the median
+# 2. Visual points that display observations that fall more than 1.5 times the IQR from either edge of the box. 
+#    These outlying points are unusual so are plotted individually.
+# 3. A line (or whisker) that extends from each end of the box and goes to 
+#    the farthest non-outlier point in the distribution.
+
+## the distribution of price by cut using geom_boxplot()
+ggplot(data = diamonds, mapping = aes(x = cut, y = price)) + 
+  geom_boxplot()
+
+## Many categorical variables don’t have such an intrinsic order, 
+## so you might want to reorder them to make a more informative display. 
+## One way to do that is with the reorder() function.
+?reorder
+
+## For example, take the class variable in the mpg dataset. 
+## You might be interested to know how highway mileage varies across classes:
+### oringin
+ggplot(data = mpg, mapping = aes(x = class, y = hwy)) +
+  geom_boxplot()
+
+### reorder()
+ggplot(data = mpg, mapping = aes(x = reorder(class, hwy, FUN = median), y = hwy)) +
+  geom_boxplot()
+
+## If you have long variable names, geom_boxplot() will work better 
+## if you flip it 90°. You can do that with coord_flip().
+ggplot(data = mpg) +
+  geom_boxplot(mapping = aes(x = reorder(class, hwy, FUN = median), y = hwy)) + 
+  coord_flip()
+
+# 7.5.1.1 Exercises
+# 1. Use what you’ve learned to improve the visualisation of 
+#    the departure times of cancelled vs. non-cancelled flights.
+nycflights13::flights %>% 
+  mutate(
+    cancelled = is.na(dep_time),
+    sched_hour = sched_dep_time %/% 100,
+    sched_min = sched_dep_time %% 100,
+    sched_dep_time = sched_hour + sched_min / 60
+  ) %>% 
+  ggplot(mapping = aes(x = sched_dep_time)) +
+    geom_freqpoly(mapping = aes(color = cancelled))
+
+nycflights13::flights %>% 
+  mutate(
+    cancelled = is.na(dep_time),
+    sched_hour = sched_dep_time %/% 100,
+    sched_min = sched_dep_time %% 100,
+    sched_dep_time = sched_hour + sched_min / 60
+  ) %>% 
+  ggplot(mapping = aes(x = sched_dep_time, y = ..density..)) +
+  geom_density(mapping = aes(color = cancelled))
+
+nycflights13::flights %>% 
+  mutate(
+    cancelled = is.na(dep_time),
+    sched_hour = sched_dep_time %/% 100, 
+    sched_min = sched_dep_time %% 100,
+    sched_dep_time = sched_hour + sched_min / 60
+  ) %>% 
+  ggplot(mapping = aes(x = cancelled, y = sched_dep_time)) +
+    geom_boxplot()
+
+# 2. What variable in the diamonds dataset is most important for predicting 
+#    the price of a diamond? How is that variable correlated with cut? 
+#    Why does the combination of those two relationships lead to lower 
+#    quality diamonds being more expensive?
+ggplot(data = diamonds, mapping = aes(x = carat, y = price)) +
+  geom_point() +
+  geom_smooth(se = FALSE)
+
+ggplot(data = diamonds) + 
+  geom_boxplot(mapping = aes(x = reorder(cut, price, FUN = median), y = price, color = cut))
+
+ggplot(data = diamonds) + 
+  geom_boxplot(mapping = aes(x = reorder(clarity, price, FUN = median), y = price, color = clarity))
+
+ggplot(data = diamonds) + 
+  geom_boxplot(mapping = aes(x = reorder(color, price, FUN = median), y = price, color = color))
+
+
+## reference: https://lokhc.wordpress.com/r-for-data-science-solutions/chapter-7-exploratory-data-analysis/
+diamonds %>% 
+  mutate(
+    color = as.numeric(color),
+    clarity = as.numeric(clarity),
+    cut = as.numeric(cut)
+  ) %>% 
+  select(price, everything()) %>% 
+  cor()
+## (1) carat is the most correlated variable with price, so it is the most important variable in predicting price of diamonds.
+## (2) carat and cut are slightly negatively correlated, meaning diamonds of higher weights tend to have a lower cut rating.
+
+# 3. Install the ggstance package, and create a horizontal boxplot. How does this compare to using coord_flip()?
+if(!require(ggstance)) install.packages('ggstance')
+library(ggstance)
+
+nycflights13::flights %>% 
+  mutate(
+    cancelled = is.na(dep_time),
+    sched_hour = sched_dep_time %/% 100, 
+    sched_min = sched_dep_time %% 100,
+    sched_dep_time = sched_hour + sched_min / 60
+  ) %>% 
+  ggplot(mapping = aes(x = cancelled, y = sched_dep_time)) +
+  geom_boxplot() +
+  coord_flip()
+
+nycflights13::flights %>% 
+  mutate(
+    cancelled = is.na(dep_time),
+    sched_hour = sched_dep_time %/% 100, 
+    sched_min = sched_dep_time %% 100,
+    sched_dep_time = sched_hour + sched_min / 60
+  ) %>% 
+  ggplot(mapping = aes(x = sched_dep_time, y = cancelled)) +
+   geom_boxploth()
+
+# 4. One problem with boxplots is that they were developed in an era of much smaller datasets and tend to 
+#    display a prohibitively large number of “outlying values”. One approach to remedy this problem is the letter value plot. 
+#    Install the lvplot package, and try using geom_lv() to display the distribution of price vs cut. What do you learn? 
+#    How do you interpret the plots?
+
+
+
+
+
+
+
+# 5. Compare and contrast geom_violin() with a facetted geom_histogram(), or a coloured geom_freqpoly(). 
+#    What are the pros and cons of each method?
+
+
+
+
+
+
+
+# 6. If you have a small dataset, it’s sometimes useful to use geom_jitter() to see the relationship between a continuous 
+#    and categorical variable. The ggbeeswarm package provides a number of methods similar to geom_jitter().
+#    List them and briefly describe what each one does.
 
 
 
@@ -1383,8 +1902,4 @@ flights %>%
 
 # ---------------------------------------------------------------------------------
 # Workflow: projects
-
-
-
-
 
