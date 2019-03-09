@@ -1735,7 +1735,6 @@ flights %>%
     avg_dep_delay = mean(dep_delay, na.rm = TRUE)
     ) %>% 
   left_join(planes, by = 'tailnum') %>%
-  filter(!is.na(year)) %>% 
   mutate(aircraft_age = (max(planes$year, na.rm = TRUE) - year)) %>%
   group_by(aircraft_age) %>% 
   summarise(
@@ -1759,19 +1758,157 @@ flights %>%
 
 # 4. What weather conditions make it more likely to see a delay?
 flights %>% 
-  left_join(weather) %>% 
-  View()
-
+  left_join(weather, by = c("year", "month", "day", "origin", "hour", "time_hour")) %>% 
+  gather(key = 'conditions', value = 'value', temp:visib) %>% 
+  filter(!is.na(dep_delay)) %>% 
+  ggplot(aes(value, dep_delay)) + 
+  geom_point() + 
+  facet_grid(.~conditions, scales = 'free_x')
   
 # 5. What happened on June 13 2013? Display the spatial pattern of delays, 
 #    and then use Google to cross-reference with the weather.
+flights %>% 
+  filter(year == 2013, month == 6, day == 13) %>% 
+  group_by(dest) %>% 
+  summarise(avg_arr_delay = mean(arr_delay, na.rm = TRUE)) %>% 
+  left_join(airports, by = c('dest' = 'faa')) %>% 
+  ggplot(aes(lon, lat, size = avg_arr_delay, color = avg_arr_delay)) + 
+  geom_point() + 
+  borders('state') +
+  coord_quickmap()
+## https://en.wikipedia.org/wiki/June_12–13,_2013_derecho_series
+
+# 13.4.7 Other implementations
+# base::merge() can perform all four types of mutating join:
+# --------------------|-----------------------------------------|
+# dplyr	              | merge                                   |
+# --------------------|-----------------------------------------|
+# inner_join(x, y)    | merge(x, y)                             |
+# left_join(x, y)	    | merge(x, y, all.x = TRUE)               |
+# right_join(x, y)	  | merge(x, y, all.y = TRUE)               |
+# full_join(x, y)	    | merge(x, y, all.x = TRUE, all.y = TRUE) |
+# --------------------|-----------------------------------------|
+
+# The advantages of the specific dplyr verbs is that they more clearly convey the intent of your code: 
+# the difference between the joins is really important but concealed in the arguments of merge(). 
+# dplyr’s joins are considerably faster and don’t mess with the order of the rows.
+
+# SQL is the inspiration for dplyr’s conventions, so the translation is straightforward:
+# -----------------------------|----------------------------------------------|
+# dplyr                        | SQL                                          |
+# -----------------------------|----------------------------------------------|
+# inner_join(x, y, by = "z")	 | SELECT * FROM x INNER JOIN y USING (z)       |
+# left_join(x, y, by = "z")	   | SELECT * FROM x LEFT OUTER JOIN y USING (z)  |
+# right_join(x, y, by = "z")	 | SELECT * FROM x RIGHT OUTER JOIN y USING (z) |
+# full_join(x, y, by = "z")	   | SELECT * FROM x FULL OUTER JOIN y USING (z)  |
+# -----------------------------|----------------------------------------------|
+# Note that “INNER” and “OUTER” are optional, and often omitted.
+
+# Joining different variables between the tables, e.g. inner_join(x, y, by = c("a" = "b")) 
+# uses a slightly different syntax in SQL: SELECT * FROM x INNER JOIN y ON x.a = y.b. 
+# As this syntax suggests, SQL supports a wider range of join types than dplyr because 
+# you can connect the tables using constraints other than equality (sometimes called non-equijoins).
+
+# 13.5 Filtering joins
+# Filtering joins match observations in the same way as mutating joins,
+# but affect the observations, not the variables. There are two types:
+
+# 1. semi_join(x, y) keeps all observations in x that have a match in y.
+# 2. anti_join(x, y) drops all observations in x that have a match in y.
+
+# Semi-joins are useful for matching filtered summary tables back to the original rows. 
+# For example, imagine you’ve found the top ten most popular destinations:
+  
+top_dest <- flights %>% 
+  count(dest, sort = TRUE) %>% 
+  head(10)
+top_dest
+
+# Now you want to find each flight that went to one of those destinations. 
+# You could construct a filter yourself:
+flights %>% 
+  filter(dest %in% top_dest$dest)
+
+# But it’s difficult to extend that approach to multiple variables. 
+# For example, imagine that you’d found the 10 days with highest average delays. 
+# How would you construct the filter statement that used year, month, and day to match it back to flights?
+# Instead you can use a semi-join, which connects the two tables like a mutating join, 
+# but instead of adding new columns, only keeps the rows in x that have a match in y:
+flights %>% 
+  semi_join(top_dest)
+  
+# Only the existence of a match is important; it doesn’t matter which observation is matched. 
+# This means that filtering joins never duplicate rows like mutating joins do:
+
+# The inverse of a semi-join is an anti-join. An anti-join keeps the rows that don’t have a match:
+# Anti-joins are useful for diagnosing join mismatches. 
+# For example, when connecting flights and planes, 
+# you might be interested to know that there are many flights that don’t have a match in planes:
+flights %>% 
+  anti_join(planes, by = 'tailnum') %>% 
+  count(tailnum, sort = TRUE) 
+
+# 13.5.1 Exercises
+# 1. What does it mean for a flight to have a missing tailnum? 
+#    What do the tail numbers that don’t have a matching record in planes have in common? 
+#    (Hint: one variable explains ~90% of the problems.)
+flights %>% 
+  filter(is.na(tailnum))
+## It's seems that the flights have a missing tailnum is all the canceled flight.
+flights %>% 
+  filter(is.na(tailnum)) %>% 
+  count(origin, sort = TRUE) %>% 
+  left_join(airports, c('origin' = 'faa')) %>% 
+  ggplot(aes(lon, lat)) + 
+  geom_point(size = 3) + 
+  coord_quickmap() + 
+  borders('state')
+
+flights %>% 
+  anti_join(planes, by = 'tailnum') %>% 
+  count(carrier, sort = TRUE)
+
+# 2. Filter flights to only show flights with planes that have flown at least 100 flights.
 
 
+
+
+
+
+# 3. Combine fueleconomy::vehicles and fueleconomy::common to find only the records for the most common models.
+
+
+
+
+
+# 4. Find the 48 hours (over the course of the whole year) that have the worst delays. 
+#    Cross-reference it with the weather data. Can you see any patterns?
 
 
 
 
   
+# 5. What does anti_join(flights, airports, by = c("dest" = "faa")) tell you? 
+#    What does anti_join(airports, flights, by = c("faa" = "dest")) tell you?
+
+
+
+
+  
+# 6. You might expect that there’s an implicit relationship between plane and airline, 
+#    because each plane is flown by a single airline.
+#    Confirm or reject this hypothesis using the tools you’ve learned above.
+
+
+
+
+
+
+
+
+
+
+
 
 
 
