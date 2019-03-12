@@ -1869,37 +1869,671 @@ flights %>%
   count(carrier, sort = TRUE)
 
 # 2. Filter flights to only show flights with planes that have flown at least 100 flights.
+## count the flights that have flown at least 1000 flights.
+at_least_100 <- flights %>% 
+  count(tailnum, sort = TRUE) %>% 
+  filter(n >= 100)
 
-
-
-
-
+## join two table with flights and planes.
+flights %>% 
+  semi_join(at_least_100, by = 'tailnum')
 
 # 3. Combine fueleconomy::vehicles and fueleconomy::common to find only the records for the most common models.
+## Quick look the tables:
+fueleconomy::vehicles
+fueleconomy::common
 
-
-
-
+fueleconomy::vehicles %>% 
+  left_join(fueleconomy::common, by = c('make', 'model'))
 
 # 4. Find the 48 hours (over the course of the whole year) that have the worst delays. 
 #    Cross-reference it with the weather data. Can you see any patterns?
+worst_hour <-flights %>% 
+  mutate(hour = sched_dep_time %/% 100) %>% 
+  group_by(origin, year, month, day, hour) %>% 
+  summarise(dep_delay = mean(dep_delay, na.rm  = TRUE)) %>% 
+  ungroup() %>% 
+  arrange(desc(dep_delay)) %>% 
+  head(48)
 
+weather_most_delay <- weather %>% 
+  semi_join(worst_hour, by = c('origin', 'year', 'month', 'day', 'hour'))
 
-
-
+flights_2_days <- flights %>%  
+  group_by(year, month, day) %>% 
+  summarise(
+    dep_delay = mean(dep_delay, na.rm = TRUE),
+    arr_delay = mean(arr_delay, na.rm = TRUE)
+    ) %>% 
+  unite(date, year, month, day, sep = '-') %>% 
+  mutate(date = parse_date(date, '%Y-%m-%d')) %>% 
+  gather(key = 'mode', value = 'delay', 2:3) %>% 
+  mutate(mode = factor(mode, labels = c('Average departure delay', 'Average arrival delay')))
   
+weather_2_days <- weather %>% 
+  group_by(year, month, day) %>% 
+  summarise(
+    wind_speed = mean(wind_speed, na.rm = TRUE),
+    wind_gust = mean(wind_gust, na.rm = TRUE),
+    precip = mean(precip, na.rm = TRUE),
+    visib = mean(visib, na.rm = TRUE)
+  ) %>% 
+  unite(date, year, month, day, sep = '-') %>% 
+  mutate(date = parse_date(date, '%Y-%m-%d'))
+
+flights_2_days %>% 
+  left_join(weather_2_days)
+
 # 5. What does anti_join(flights, airports, by = c("dest" = "faa")) tell you? 
 #    What does anti_join(airports, flights, by = c("faa" = "dest")) tell you?
+anti_join(flights, airports, by = c('dest' = 'faa'))
+## It's will show the destination of flights that not in airports table.
 
-
-
-
+anti_join(airports, flights, by = c('faa' = 'dest'))
+## It's will show the airport's name and destination that no planes fling to .
   
 # 6. You might expect that there’s an implicit relationship between plane and airline, 
 #    because each plane is flown by a single airline.
 #    Confirm or reject this hypothesis using the tools you’ve learned above.
+flights %>% 
+  select(carrier, tailnum) %>% 
+  group_by(tailnum) %>% 
+  summarise(n = n_distinct(carrier)) %>% 
+  filter( n > 1)
 
+# 13.6 Join problems
 
+# The data you’ve been working with in this chapter has been cleaned up so that you’ll have as few problems as possible.
+# Your own data is unlikely to be so nice, so there are a few things that you should do with your own data to make your joins go smoothly.
+
+# 1. Start by identifying the variables that form the primary key in each table. 
+#    You should usually do this based on your understanding of the data, 
+#    not empirically by looking for a combination of variables that give a unique identifier.
+#    If you just look for variables without thinking about what they mean, 
+#    you might get (un)lucky and find a combination that’s unique in your current data 
+#    but the relationship might not be true in general.
+# For example, the altitude and longitude uniquely identify each airport, but they are not good identifiers!
+airports %>% count(alt, lon) %>% filter(n > 1)
+
+# 2. Check that none of the variables in the primary key are missing. 
+#    If a value is missing then it can’t identify an observation!
+
+# 3. Check that your foreign keys match primary keys in another table. 
+#    The best way to do this is with an anti_join().
+#    It’s common for keys not to match because of data entry errors. Fixing these is often a lot of work.
+
+#    If you do have missing keys, you’ll need to be thoughtful about your use of inner vs. outer joins, 
+#    carefully considering whether or not you want to drop rows that don’t have a match.
+
+# Be aware that simply checking the number of rows before and after the join is not sufficient to 
+# ensure that your join has gone smoothly. If you have an inner join with duplicate keys in both tables, 
+# you might get unlucky as the number of dropped rows might exactly equal the number of duplicated rows!
+
+# 13.7 Set operations
+# The final type of two-table verb are the set operations.
+# Generally, I use these the least frequently, 
+# but they are occasionally useful when you want to break a single complex filter into simpler pieces. 
+# All these operations work with a complete row, comparing the values of every variable. 
+# These expect the x and y inputs to have the same variables, and treat the observations like sets:
+
+# 1. intersect(x, y): return only observations in both x and y.
+# 2. union(x, y): return unique observations in x and y.
+# 3. setdiff(x, y): return observations in x, but not in y.
+
+df1 <- tribble(
+  ~x, ~y,
+  1,  1,
+  2,  1
+)
+
+df2 <- tribble(
+  ~x, ~y, 
+  1,  1, 
+  1,  2
+)
+
+# The four possibilities are:
+intersect(df1, df2)
+
+union(df1, df2)
+
+setdiff(df1, df2)
+
+setdiff(df2, df1)
+
+# --------------------------------------------------------------------------------------------------
+# Strings
+
+# 14.1 Introduction
+# This chapter introduces you to string manipulation in R. 
+# You’ll learn the basics of how strings work and how to create them by hand, 
+# but the focus of this chapter will be on regular expressions, or regexps for short. 
+# Regular expressions are useful because strings usually contain unstructured or semi-structured data,
+# and regexps are a concise language for describing patterns in strings. 
+# When you first look at a regexp, you’ll think a cat walked across your keyboard, 
+# but as your understanding improves they will soon start to make sense.
+
+# 14.1.1 Prerequisites
+# This chapter will focus on the stringr package for string manipulation. 
+# stringr is not part of the core tidyverse because you don’t always have textual data, 
+# so we need to load it explicitly.
+library(tidyverse)
+library(stringr)
+
+# 14.2 String basics
+# You can create strings with either single quotes or double quotes. 
+# Unlike other languages, there is no difference in behaviour. 
+# I recommend always using ", unless you want to create a string that contains multiple ".
+string1 <- "This is a string"
+string2 <- 'If I want to include "quote" inside a string, I use single quotes'
+
+# If you forget to close a quote, you’ll see +, the continuation character:
+# "This is a string without a closing quote
+# > "This is a string without a closing quote
+# + 
+# + 
+
+# If this happen to you, press Escape and try again!
+# To include a literal single or double quote in a string you can use \ to “escape” it:
+double_quote <- "\"" # or '"'
+single_quote <- '\'' # or "'"
+
+# That means if you want to include a literal backslash, you’ll need to double it up: "\\".
+
+# Beware that the printed representation of a string is not the same as string itself,
+# because the printed representation shows the escapes.
+# To see the raw contents of the string, use writeLines():
+x <- c("\"", "\\")
+x
+
+writeLines(x)
+
+# There are a handful of other special characters. 
+# The most common are "\n", newline, and "\t", tab, 
+# but you can see the complete list by requesting help on ": ?'"', or ?"'". 
+# You’ll also sometimes see strings like "\u00b5", 
+# this is a way of writing non-English characters that works on all platforms:
+
+# Multiple strings are often stored in a character vector, which you can create with c():
+c("one", "two", "there")
+
+# 14.2.1 String length
+
+# Base R contains many functions to work with strings but we’ll avoid them because they can be inconsistent, 
+# which makes them hard to remember. Instead we’ll use functions from stringr. 
+# These have more intuitive names, and all start with str_. 
+# For example, str_length() tells you the number of characters in a string:
+
+str_length(c("a", "R for data science", NA))
+
+# The common str_ prefix is particularly useful if you use RStudio, 
+# because typing str_ will trigger autocomplete, allowing you to see all stringr functions:
+
+# 14.2.2 Combining strings
+
+# To combine two or more strings, use str_c():
+
+str_c("x", "y")
+
+str_c("x", "y", "z")
+
+# Use the sep argument to control how they’re separated:
+str_c("x", "y", sep = ",")
+
+# Like most other functions in R, missing values are contagious. 
+# If you want them to print as "NA", use str_replace_na():
+x <- c("abc", NA)
+str_c("|-", x, "-|")
+
+str_c("|-", str_replace_na(x), "-|")
+
+# As shown above, str_c() is vectorised, 
+# and it automatically recycles shorter vectors to the same length as the longest
+str_c("prefix-", c("a", "b", "c"), "-suffix")
+
+# Objects of length 0 are silently dropped. This is particularly useful in conjunction with if:
+name <- "Hdley"
+time_of_day <- "morning"
+birthday <- FALSE
+
+str_c(
+  "Good ", time_of_day, " ", name, 
+  if(birthday) " and HAPPY BIRTHDAY",
+  "."
+)
+
+# To collapse a vector of strings into a single string, use collapse:
+str_c(c("x", "y", "z"), collapse = ", ")
+
+# 14.2.3 Subsetting strings
+
+# You can extract parts of a string using str_sub(). 
+# As well as the string, str_sub() takes start and end arguments
+# which give the (inclusive) position of the substring:
+
+x <- c("Apple", "Banana", "Pear")
+str_sub(x, 1, 3)
+
+str_sub(x, -3, -1)
+
+# Note that str_sub() won’t fail if the string is too short: 
+# it will just return as much as possible:
+str_sub("a", 1, 5)
+
+# You can also use the assignment form of str_sub() to modify strings:
+str_sub(x, 1, 1) <- str_to_lower(str_sub(x, 1, 1))
+
+# 14.2.4 Locales
+
+# Above I used str_to_lower() to change the text to lower case. 
+# You can also use str_to_upper() or str_to_title(). 
+# However, changing case is more complicated than it might at first appear 
+# because different languages have different rules for changing case. 
+# You can pick which set of rules to use by specifying a locale:
+str_to_upper(c("i", "ı"))
+
+str_to_upper(c("i", 'ı'), locale = "tr")
+
+# The locale is specified as a ISO 639 language code, which is a two or three letter abbreviation. 
+# If you don’t already know the code for your language, Wikipedia has a good list. 
+# If you leave the locale blank, it will use the current locale, as provided by your operating system.
+
+# Another important operation that’s affected by the locale is sorting. 
+# The base R order() and sort() functions sort strings using the current locale. 
+# If you want robust behaviour across different computers, you may want to use str_sort() and str_order() 
+# which take an additional locale argument:
+x <- c("apple", "eggplant", "banana")
+
+str_sort(x, locale = "en") # Englich
+str_sort(x, locale = "haw") # Hawaiian
+
+# 14.2.5 Exercises
+# 1. In code that doesn’t use stringr, you’ll often see paste() and paste0(). 
+#    What’s the difference between the two functions? 
+#    What stringr function are they equivalent to? 
+#    How do the functions differ in their handling of NA?
+?paste()
+## paste0(..., collapse) is equivalent to paste(..., sep = "", collapse), slightly more efficiently.
+x <- c("abc", NA)
+
+## paste() will auto coerces NA to string of NA.
+paste0("|-", x, "-|") 
+
+## But str_c() need to add str_replace_na() function to coerces NA.
+str_c("|-", str_replace_na(x) , "-|") 
+
+# 2. In your own words, describe the difference between the sep and collapse arguments to str_c().
+
+## sep: String to insert between input vectors.
+## collapse: Combine input vectors into single string.
+
+# 3. Use str_length() and str_sub() to extract the middle character from a string. 
+#   What will you do if the string has an even number of characters?
+test <- c("a", "ab", "abc", "abcd", "abcde")
+
+test %>% str_sub(ceiling(str_length(.) / 2), ceiling(str_length(.) / 2))
+
+ifelse(
+  str_length(test) %% 2 == 1,
+  str_sub(test, ceiling(str_length(test) / 2), ceiling(str_length(test) / 2)), 
+  str_sub(test, ceiling(str_length(test) / 2) + 1, ceiling(str_length(test) / 2) + 1))
+
+# 4. What does str_wrap() do? When might you want to use it?
+?str_wrap
+## str_wrap() function will Wrap strings into nicely formatted paragraphs.
+test <- "별이 둥실 떠오른다\n
+너도 함께 떠오른다\n
+두 손을 휘이 젖고\n
+다시 또 저어도\n
+그대는 계속 떠오르죠\n
+눈물이 툭 떨어진다\n
+들킬까 닦아버린다\n
+그대는 왜 이리 모질게 아픈가요\n
+나의 마음에 이렇게도\n
+멀리 저 멀리 들려오네요\n
+그대 숨소리 그대의 목소리\n
+꿈에서도 아픈 그대의 소리\n
+구름따라서 바람따라서\n
+매일 걸으면\n
+혹시나 보일까\n
+너의 그 아름다운\n
+웃음"
+
+cat(str_wrap(test, width = 40))
+
+# 5. What does str_trim() do? What’s the opposite of str_trim()?
+?str_trim
+## str_trim() function will removes whitespace from start and end of string.
+
+test <- " abcdefg "
+str_trim(test) # This will trim the space from right side and left side.
+str_trim(test, side = "left")
+
+# 6. Write a function that turns (e.g.) a vector c("a", "b", "c") into the string a, b, and c. 
+#    Think carefully about what it should do if given a vector of length 0, 1, or 2.
+test <- c("a", "b", "c")
+for (i in test){print(i)}
+
+str_c(test, sep = "")
+
+# 14.3 Matching patterns with regular expressions
+
+# Regexps are a very terse language that allow you to describe patterns in strings. 
+# They take a little while to get your head around, but once you understand them, 
+# you’ll find them extremely useful.
+
+# To learn regular expressions, we’ll use str_view() and str_view_all(). 
+# These functions take a character vector and a regular expression, and show you how they match.
+# We’ll start with very simple regular expressions and then gradually get more and more complicated. 
+# Once you’ve mastered pattern matching, 
+# you’ll learn how to apply those ideas with various stringr functions.
+
+# 14.3.1 Basic matches
+
+# The simplest patterns match exact strings:
+x <- c("apple", "banana", "pear")
+str_view(x, "an")
+
+# The next step up in complexity is ., which matches any character (except a newline):
+str_view(x, ".a.")
+
+# But if “.” matches any character, how do you match the character “.”? 
+# You need to use an “escape” to tell the regular expression you want to match it exactly, 
+# not use its special behaviour. Like strings, regexps use the backslash, \, to escape special behaviour.
+# So to match an ., you need the regexp \.. 
+# Unfortunately this creates a problem. We use strings to represent regular expressions,
+# and \ is also used as an escape symbol in strings. 
+# So to create the regular expression \. we need the string "\\.".
+
+## To create the regular expression, we need \\
+dot <- "\\."
+
+## But the expression itself only contains one:
+writeLines(dot)
+
+## And this tells R to look for an explicit .
+str_view(c("abc", "a.c", "bef"), "a\\.c")
+
+# If \ is used as an escape character in regular expressions, how do you match a literal \? 
+# Well you need to escape it, creating the regular expression \\.
+# To create that regular expression, you need to use a string, which also needs to escape \. 
+# That means to match a literal \ you need to write "\\\\" — you need four backslashes to match one!
+x <- "a\\b"
+writeLines(x)
+
+str_view(x, "\\\\")
+
+# In this book, I’ll write regular expression as \. 
+# and strings that represent the regular expression as "\\.".
+
+# 14.3.1.1 Exercises
+# 1. Explain why each of these strings don’t match a \: "\", "\\", "\\\".
+
+x <- "a\\b"
+# \: 
+## str_view(x, "\")
+## this case will escape last quote.
+
+# \\:
+str_view(x, "\\")
+## if we want to find \ in string, we need to escape the \ in string and \ in regex, like: "\\\\"
+
+# \\\:
+## str_view(x, "\\\")
+
+# 2. How would you match the sequence "'\?
+x <- "\"\'\\"
+cat(x)
+str_view(x, "\\\"\\\'\\\\")
+
+# 3. What patterns will the regular expression \..\..\.. match? 
+#    How would you represent it as a string?
+x <- c("a\\b\\c\\d", "aa\\bb\\cc\\dd")
+
+str_view(x, "\\\\..\\\\..\\\\..")
+
+# 14.3.2 Anchors
+
+# By default, regular expressions will match any part of a string. 
+# It’s often useful to anchor the regular expression so that it matches from the start
+# or end of the string. You can use:
+
+# 1. ^ to match the start of the string.
+# 2. $ to match the end of the string.
+
+x <- c("apple", "banana", "pear")
+str_view(x, "^a")
+
+str_view(x, "a$")
+
+# To remember which is which, try this mnemonic which I learned from Evan Misshula: 
+# if you begin with power (^), you end up with money ($).
+# https://twitter.com/emisshula/status/323863393167613953
+
+# To force a regular expression to only match a complete string, anchor it with both ^ and $:
+x <- c("apple pie", "apple", "apple cake")
+str_view(x, "apple") ## This will show all string that contains "apple"
+
+str_view(x, "^apple$")
+
+# You can also match the boundary between words with \b. 
+# I don’t often use this in R, but I will sometimes use it when I’m doing a search in RStudio 
+# when I want to find the name of a function that’s a component of other functions. 
+# For example, I’ll search for \bsum\b to avoid matching summarise, summary, rowsum and so on.
+
+# 14.3.2.1 Exercises
+
+# 1. How would you match the literal string "$^$"?
+x <- "$^$"
+## use the escape sympol.
+str_view(x, "\\$\\^\\$")
+
+# 2. Given the corpus of common words in stringr::words, 
+#    create regular expressions that find all words that:
+#    (1) Start with “y”.
+#    (2) End with “x”
+#    (3) Are exactly three letters long. (Don’t cheat by using str_length()!)
+#    (4) Have seven letters or more.
+# Since this list is long, you might want to use the match argument 
+# to str_view() to show only the matching or non-matching words.
+words <- stringr::words
+## 1. 
+str_view(words, "^y", match = TRUE)
+words[str_sub(words, 1, 1) == "y"]
+
+## 2. 
+str_view(words, "x$", match = TRUE)
+words[str_sub(words, str_length(words), str_length(words)) == "x"]
+
+## 3. 
+str_view(words, "^...$", match = TRUE)
+words[str_length(words) == 3]
+
+## 4. 
+str_view(words, "^.......", match = TRUE)
+words[str_length(words) >= 7]
+
+# 14.3.3 Character classes and alternatives
+
+# There are a number of special patterns that match more than one character. 
+# You’ve already seen ., which matches any character apart from a newline. 
+# There are four other useful tools:
+
+# 1. \d: matches any digit.
+# 2. \s: matches any whitespace (e.g. space, tab, newline).
+# 3. [abc]: matches a, b, or c.
+# 4. [^abc]: matches anything except a, b, or c.
+
+# Remember, to create a regular expression containing \d or \s, 
+# you’ll need to escape the \ for the string, so you’ll type "\\d" or "\\s".
+
+# A character class containing a single character is a nice alternative to backslash escapes
+# when you want to include a single metacharacter in a regex. 
+# Many people find this more readable.
+
+# Look for a literal character that normally has special meaning in a regex
+str_view(c("abc", "a.c", "a*c", "a c"), "a[.]c")
+
+str_view(c("abc", "a.c", "a*c", "a c"), ".[*]c")
+
+str_view(c("abc", "a.c", "a*c", "a c"), ".[ ]c")
+
+# This works for most (but not all) regex metacharacters: $ . | ? * + ( ) [ {. 
+# Unfortunately, a few characters have special meaning even inside a character class 
+# and must be handled with backslash escapes: ] \ ^ and -.
+str_view(c("a-c", "a]c", "a^c"), "a[\\^]c")
+
+# You can use alternation to pick between one or more alternative patterns. 
+# For example, abc|d..f will match either ‘“abc”’, or "deaf". 
+# Note that the precedence for | is low, so that abc|xyz matches abc or xyz not abcyz or abxyz. 
+# Like with mathematical expressions, if precedence ever gets confusing, use parentheses to make it clear what you want:
+str_view(c("grey", "gray"), "gr(e|a)y")
+
+# 14.3.3.1 Exercises
+# 1. Create regular expressions to find all words that:
+#    (1) Start with a vowel.
+#    (2) That only contain consonants. (Hint: thinking about matching “not”-vowels.)
+#    (3) End with ed, but not with eed.
+#    (4) End with ing or ise.
+
+## (1)
+str_view(words, "^[aeiou]", match = TRUE)
+
+## (2)
+str_view(words, "^[^aeiou]*$", match = TRUE)
+
+## (3)
+str_view(words, "[^e]ed$", match = TRUE)
+
+## (4)
+str_view(words, "i(ng|se)$", match = TRUE)
+
+# 2. Empirically verify the rule “i before e except after c”.
+str_view(words, "([^c]|)ei", match = TRUE)
+
+# 3. Is “q” always followed by a “u”?
+str_view(words, "q[^u]", match = TRUE)
+## yes.
+
+# 4. Write a regular expression that matches a word if it’s probably written in British English, not American English.
+## colour, color
+str_view(c("colour", "color"), "colo(|u)r")
+
+# 5. Create a regular expression that will match telephone numbers as commonly written in your country.
+## (1) start with 09
+## (2) 10 digits
+phone_numbers <- c("0987654321", "091234rs78", "0988", "0123456789", "092a456789", "0987-654-321")
+str_view(phone_numbers, "^09\\d\\d\\d\\d\\d\\d\\d\\d")
+str_view(phone_numbers, "^09\\d{8}")
+str_view(phone_numbers, "^09\\d{2}(|\\-)\\d{3}(|\\-)\\d{3}")
+
+# 4.3.4 Repetition
+
+# The next step up in power involves controlling how many times a pattern matches:
+# 1. ?: 0 or 1
+# 2. +: 1 or more
+# 3. *: 0 or more
+
+x <- "1888 is the longest year in Roman numerals: MDCCCLXXXVIII"
+
+str_view(x, "CC?")
+
+str_view(x, "CC+")
+
+str_view(x, "C[LX]+")
+
+# Note that the precedence of these operators is high, 
+# so you can write: colou?r to match either American or British spellings. 
+# That means most uses will need parentheses, like bana(na)+.
+str_view(c("color", "colour"), "colou?r")
+
+# You can also specify the number of matches precisely:
+# 1. {n}: exactly n
+# 2. {n,}: n or more
+# 3. {,m}: at most m
+# 4. {n,m}: between n and m
+
+str_view(x, "C{2}") # str_view(x, "CC)
+
+str_view(x, "C{2,}") # str_view(x, "CC+)
+
+str_view(x, "C{2,3}")
+
+# By default these matches are “greedy”: they will match the longest string possible. 
+# You can make them “lazy”, matching the shortest string possible by putting a ? after them. 
+# This is an advanced feature of regular expressions, but it’s useful to know that it exists:
+
+str_view(x, "C{2,3}?")
+
+str_view(x, 'C[LX]+?')
+
+# 14.3.4.1 Exercises
+
+# 1. Describe the equivalents of ?, +, * in {m,n} form.
+## (1)
+str_view(c("colour", "color"), "colou?r")
+str_view(c("colour", "color"), "colo(|u)r")
+
+## (2)
+str_view("aaabbbccc123", "b+")
+str_view("aaabbbccc123", "b{1,}")
+
+## (3) 
+str_view("aaabbbccc123", "cc*")
+str_view("aaabbbccc123", "cc{0,}")
+
+## (4)
+str_view("abbcccdddd123", "d{2,3}")
+str_view("abbcccdddd123", "d{3}|d{2}")
+
+# 2. Describe in words what these regular expressions match: 
+#    (read carefully to see if I’m using a regular expression or a string that defines a regular expression.)
+#    (1) ^.*$
+#    (2) "\\{.+\\}"
+#    (3) \d{4}-\d{2}-\d{2}
+#    (4) "\\\\{4}"
+
+## (1) this will match all string with any length. start any charactor, any length of string, end with anything.
+str_view(c("123", "ddd", "5tg", " ", ""), "^.*$")
+
+## (2) this will match string with "{" + "at least one charactor" + "}".
+str_view(c("abbcccdd123 {123}", "{}"), "\\{.+\\}")
+
+## (3) this will match string with "4 digis" + "-" + "2 digits" + "-" + "2 digis"
+str_view(c("1234-12-12", "1234 12 12", " 12341212", "1234+12+12"), "\\d{4}-\\d{2}-\\d{2}")
+
+## (4) this will match string with 4 times "\"
+str_view(c("\\", "\\\\", "\\\\\\", "\\\\\\\\"), "\\\\{4}")
+
+# 3. Create regular expressions to find all words that:
+#    (1) Start with three consonants.
+#    (2) Have three or more vowels in a row.
+#    (3) Have two or more vowel-consonant pairs in a row.
+
+## (1) 
+str_view(words, "^[^aeiou]{3}+", match = TRUE)
+str_view(words, "^[^aeiou]{3,}", match = TRUE)
+
+## (2) 
+str_view(words, "[aeiou]{3,}", match = TRUE)
+
+## (3) 
+str_view(words, "([aeiou][^aeiou]){2,}", match = TRUE)
+
+# 4. Solve the beginner regexp crosswords at https://regexcrossword.com/challenges/beginner.
+## Tutorial done.
+## Beginner done.
+## Intermediate done.
+
+# 14.3.5 Grouping and backreferences
+
+# Earlier, you learned about parentheses as a way to disambiguate complex expressions. 
+# Parentheses also create a numbered capturing group (number 1, 2 etc.). 
+# A capturing group stores the part of the string matched by the part of 
+# the regular expression inside the parentheses.
+# You can refer to the same text as previously matched by a capturing group with backreferences, 
+# like \1, \2 etc. For example, the following regular expression
+# finds all fruits that have a repeated pair of letters.
 
 
 
