@@ -1063,7 +1063,7 @@ table3 %>%
   separate(rate, into = c('cases', 'population'), convert = TRUE)
 
 table3 %>% 
-  extract(rate,'cases')
+  extract(rate,into = c('cases', 'population'), "(.+)/(.+)")
 
 # 12.5 Missing values
 # Changing the representation of a dataset brings up an important subtlety of missing values. 
@@ -2534,11 +2534,361 @@ str_view(words, "([aeiou][^aeiou]){2,}", match = TRUE)
 # You can refer to the same text as previously matched by a capturing group with backreferences, 
 # like \1, \2 etc. For example, the following regular expression
 # finds all fruits that have a repeated pair of letters.
+str_view(fruit, "(..)\\1", match = TRUE)
 
+# (Shortly, you’ll also see how they’re useful in conjunction with str_match().)
 
+# 14.3.5.1 Exercises
 
+# 1. Describe, in words, what these expressions will match:
+#   (1) (.)\1\1
+#   (2) "(.)(.)\\2\\1"
+#   (3) (..)\1
+#   (4) "(.).\\1.\\1"
+#   (5) "(.)(.)(.).*\\3\\2\\1"
 
+## (1) this will find same charactor 3 times, like "xxx"
+str_view(words, "(.)\\1\\1", match = TRUE)
 
+## (2) this will match charactor like: xyyx
+str_view(words, "(.)(.)\\2\\1", match = TRUE)
+
+## (3) this will match charactor like: xyxy
+str_view(words, "(..)\\1", match = TRUE)
+
+## (4) this will match charactor like: x + any + xx
+str_view(words, "(.).\\1\\1", match = TRUE)
+
+## (5) xyz + any characor 0 or more + zyx
+str_view(words, "(.)(.)(.).*\\3\\2\\1", match = TRUE)
+
+# 2. Construct regular expressions to match words that:
+#    (1) Start and end with the same character.
+#    (2) Contain a repeated pair of letters (e.g. “church” contains “ch” repeated twice.)
+#    (3) Contain one letter repeated in at least three places (e.g. “eleven” contains three “e”s.)
+
+## (1) 
+str_view(words, "^(.).*\\1$", match = TRUE)
+
+## (2)
+str_view(words, "(.)(.).*\\1\\2", match = TRUE)
+
+## (3)
+str_view(words, "(.).*\\1.*\\1", match = TRUE)
+
+# 14.4 Tools
+
+# Now that you’ve learned the basics of regular expressions, 
+# it’s time to learn how to apply them to real problems.
+# In this section you’ll learn a wide array of stringr functions that let you:
+# 1. Determine which strings match a pattern.
+# 2. Find the positions of matches.
+# 3. Extract the content of matches.
+# 4. Replace matches with new values.
+# 5. Split a string based on a match.
+
+# A word of caution before we continue: because regular expressions are so powerful, 
+# it’s easy to try and solve every problem with a single regular expression. 
+# In the words of Jamie Zawinski:
+
+# As a cautionary tale, check out this regular expression that checks if a email address is valid:
+
+# This is a somewhat pathological example (because email addresses are actually surprisingly complex), but is used in real code.
+# See the stackoverflow discussion at http://stackoverflow.com/a/201378 for more details.
+
+# Don’t forget that you’re in a programming language and you have other tools at your disposal. 
+# Instead of creating one complex regular expression, it’s often easier to write a series of simpler regexps.
+# If you get stuck trying to create a single regexp that solves your problem, 
+# take a step back and think if you could break the problem down into smaller pieces, 
+# solving each challenge before moving onto the next one.
+
+# 14.4.1 Detect matches
+
+# To determine if a character vector matches a pattern, use str_detect().
+# It returns a logical vector the same length as the input:
+x <- c("apple", "banana", "pear")
+str_detect(x, "e")
+
+# Remember that when you use a logical vector in a numeric context, 
+# FALSE becomes 0 and TRUE becomes 1. 
+# That makes sum() and mean() useful if you want to answer questions about matches across a larger vector:
+
+# How many words start with t?
+sum(str_detect(words, "^t"))
+
+# What proportion of common words end with a vowel?
+mean(str_detect(words, "[aeiou]$"))
+
+# When you have complex logical conditions (e.g. match a or b but not c unless d)
+# it’s often easier to combine multiple str_detect() calls with logical operators, 
+# rather than trying to create a single regular expression. 
+# For example, here are two ways to find all words that don’t contain any vowels:
+
+ # Find all words containing at least one vowel, and negate
+no_vowels_1 <- !str_detect(words, "[aeiou]")
+
+# Find all words consisting only of consonants (non-vowels)
+no_vowels_2 <- str_detect(words, "^[^aeiou]+$")
+
+identical(no_vowels_1, no_vowels_2)
+
+# The results are identical, but I think the first approach is significantly easier to understand.
+# If your regular expression gets overly complicated, try breading it up into smaller pieces, 
+# giving each piece a name, and then combining the pieces with logical operations.
+
+# A common use of str_detect() is to select the elements that match a pattern.
+# You can do this with logical subsetting, or the convenient str_subset() wrapper:
+words[str_detect(words, "x$")]
+
+str_subset(words, "x$")
+
+# Typically, however, your strings will be one column of a data frame,
+# and you'll want to use filter instead:
+df <- tibble(
+  word = words, 
+  i = seq_along(words)
+)
+
+df %>% 
+  filter(str_detect(words, "x$"))
+
+# A variation on str_detect() is str_count(): rather than a simple yes or not,
+# it tell you how many matches there are in a string:
+x <- c("apple", "banana", "pear")
+str_count(x, "a")
+
+# On average, how many vowels per word?
+mean(str_count(words, "[aeiou]"))
+
+# It's natural to use str_count() with mutate():
+df %>% 
+  mutate(
+    vowels = str_count(word, "[aeiou]"),
+    consonants = str_count(words, "[^aeiou]")
+  )
+
+# Note that matches never overlap.
+# For example, in "abababa", how many times will the pattern "aba" match?
+# Regular expressions say two, not three:
+str_count("abababa", "aba")
+
+str_view_all("abababa", "aba")
+
+# Note the use of str_view_all(). As you'll shortly learn, many string functions comes in pairs:
+# one function words with a single match, and the other works with all matches.
+# The second function will have the suffix _all.
+
+# 14.4.1.1 Exercises
+
+# 1. For each of the following challenges, try solving it by using both a single regular expression,
+#    and a combination of multiple str_detect() calls.
+#    (1) Find all words that start or end with x.
+#    (2) Find all words that start with a vowel and end with a consonant.
+#    (3) Are there any words that contain at least one of each different vowel?
+
+##   (1)
+words[str_detect(words, "^x|x$")]
+str_subset(words, "^x|x$")
+words[str_detect(words, "^x") | str_detect(words, "x$")]
+
+identical(str_subset(words, "^x|x$"), words[str_detect(words, "^x") | str_detect(words, "x$")])
+
+## (2)
+words[str_detect(words, "^[aeiou].*[^aeiou]$")]
+str_subset(words, "^[aeiou].*[^aeiou]$")
+words[str_detect(words, "^[aeiou]") & str_detect(words, "[^aeiou]$")]
+
+identical(str_subset(words, "^[aeiou].*[^aeiou]$"), words[str_detect(words, "^[aeiou]") & str_detect(words, "[^aeiou]$")])
+
+## (3)
+words[str_detect(words, "a") & str_detect(words, "e") & str_detect(words, "i") & str_detect(words, "o") & str_detect(words, "u")]
+
+# 2. What word has the highest number of vowels? 
+#    What word has the highest proportion of vowels? 
+#    (Hint: what is the denominator?)
+
+df <- tibble(
+  word = words,
+  vowel = str_count(words, "[aeiou]"), 
+  length = str_length(word),
+  prop = vowel / str_length(word) * 100)
+
+df %>% arrange(desc(vowel))
+
+df %>% arrange(desc(prop))
+
+# 14.4.2 Extract matches
+
+# To extract the actual text of a match, use str_extract(). 
+# To show that off, we're going to need a more complicated example.
+# I'm going to use the Harvard sentences, which were designed to test VOIP systems,
+# but are also useful for practicing regexps.
+# These are provided in stringr::sentences:
+length(sentences)
+
+head(sentences)
+
+# Imagine we want to find all sentences that contain a colour.
+# We first create a vector of colour names, and then turn it into a single regular expression:
+colours <- c("red", "orange", "yellow", "green", "blue", "purple")
+colour_match <- str_c(colours, collapse = "|")
+colour_match
+
+# Now we can select the sentences that contain a colour, 
+# and then extract the colour to figure out which one it is:
+has_colour <- str_subset(sentences, colour_match)
+matches <- str_extract(has_colour, colour_match)
+head(matches)
+
+# Note that str_extract() only extracts the first match. 
+# We can see that most easily by first selecting all the sentences that have more than 1 match:
+more <- sentences[str_count(sentences, colour_match) > 1]
+str_view_all(more, colour_match)
+
+str_extract(more, colour_match)
+
+# This is a common pattern for stringr functions, because working with a single match allows you to use much simpler data structures. 
+# To get all matches, use str_extract_all(). It returns a list:
+str_extract_all(more, colour_match)
+
+# You’ll learn more about lists in lists and iteration.
+# If you use simplify = TRUE, str_extract_all() will return a matrix with short matches expanded to the same length as the longest:
+str_extract_all(more, colour_match, simplify = TRUE)
+
+x <- c("a", "a b", "a b c")
+
+str_extract_all(x, "[a-z]", simplify = TRUE)
+
+# 14.4.2.1 Exercises
+
+# 1. In the previous example, you might have noticed that the regular expression matched “flickered”,
+#    which is not a colour. Modify the regex to fix the problem.
+colours <- c("red", "orange", "yellow", "green", "blue", "purple")
+colours <- str_c("[^a-zA-Z0-9]", colours, "[^a-zA-Z0-9]")
+colour_match <- str_c(colours, collapse = "|")
+colour_match
+
+has_colour <- str_subset(sentences, colour_match)
+has_colour
+str_extract(has_colour, colour_match)
+
+# 2. From the Harvard sentences data, extract:
+#    (1) The first word from each sentence.
+#    (2) All words ending in ing.
+#    (3) All plurals.
+
+## (1)
+str_extract(sentences, "[^ ]+")
+str_extract(sentences, "[a-zA-Z]+")
+
+## (2)
+has_ing <- str_subset(sentences, "[^ ]+ing[^a-zA-Z0-9]")
+str_extract(has_ing, "[^ ]+ing[^a-zA-Z0-9]")
+
+## (3) 
+plurals <- str_subset(sentences, "[a-zA-Z]{3,}s\\b")
+str_extract(plurals, "[a-zA-Z]{3,}s\\b")
+
+# 14.4.3 Grouped matches
+# Earlier in this chapter we talked about the use of parentheses for clarifying precedence
+# and for backreferences when matching.
+# You can also use parentheses to extract parts of a complex match. 
+# For example, imagine we want to extract nouns from the sentences. 
+# As a heuristic, we’ll look for any word that comes after “a” or “the”.
+# Defining a “word” in a regular expression is a little tricky, 
+# so here I use a simple approximation: 
+# a sequence of at least one character that isn’t a space.
+noun <- "(a|the) ([^ ]+)"
+
+has_noun <- sentences %>% 
+  str_subset(noun) %>% 
+  head(10)
+
+has_noun %>% 
+  str_extract(noun)
+
+# str_extract() gives us the complete match; 
+# str_match() gives each individual component. 
+# Instead of a character vector, it returns a matrix, with one column for
+# the complete match followed by one column for each group:
+has_noun %>% 
+  str_match(noun)
+
+# (Unsurprisingly, our heuristic for detecting nouns is poor, 
+# and also picks up adjectives like smooth and parked.)
+
+# If your data is in a tibble, it's often easier to use 
+tibble(sentence = sentences) %>% 
+  tidyr::extract(
+    sentence, c("ariticle", "noun"), "(a|the) ([^ ]+)",
+    remove = FALSE
+  ) 
+  
+# Like str_extract(), if you want all matches for each string, you’ll need str_match_all().
+
+# 14.4.3.1 Exercises
+
+# 1. Find all words that come after a “number” like “one”, “two”, “three” etc. 
+#    Pull out both the number and the word.
+numbers <- c("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten")
+numbers_match <- str_c("\\b", numbers) %>% 
+  str_c(., collapse = "|") %>% 
+  str_c("(", ., ")", " ([^ ]+)")
+
+has_numbers <- str_subset(sentences, numbers_match)
+has_numbers %>% 
+  str_extract(numbers_match)
+
+tibble(sentence = sentences) %>% 
+  tidyr::extract(
+    sentence, c("number", "word"), "(one|two|three|four|five|six|seven|eight|nine|ten) ([^ ]+)",
+    remove = FALSE
+  )
+
+# 2. Find all contractions. Separate out the pieces before and after the apostrophe.
+str_subset(sentences, "[^ ]+\\'[^ ]+") %>% 
+  str_extract("[^ ]+\\'[^ ]+")
+
+tibble(sentence = str_subset(sentences, "[^ ]+\\'[^ ]+")) %>% 
+  tidyr::extract(
+    sentence, c("con"), "([^ ]+\\'[^ ]+)",
+    remove = FALSE
+  )
+
+# 14.4.4 Replacing matches
+# str_replace() and str_replace_all() allow you to replace matches with new strings.
+# The simplest use is to replace a pattern with a fixed string:
+x <- c("apple", "pear", "banana")
+str_replace(x, "[aeiou]", "-")
+str_replace_all(x, "[aeiou]", "-")
+
+# With str_replace_all() you can perform multiple replacements by supplying a named vector:
+x <- c("1 house", "2 cars", "3 people")
+str_replace_all(x, c("1" = "one", "2" = "two", "3" = "three"))
+
+# Instead of replacing with a fixed string you can use backreferences to insert components of the match. 
+# In the following code, I flip the order of the second and third words.
+sentences %>% 
+  str_replace("([^ ]+) ([^ ]+) ([^ ]+)", "\\1 \\3 \\2") %>% 
+  head(5)
+
+# 14.4.4.1 Exercises
+# 1. Replace all forward slashes in a string with backslashes.
+
+x <- "java/python/r/c++/sql/html/css"
+str_view_all(x, "/", match = TRUE)
+x %>% 
+  str_replace_all("/", "\\\\")
+
+# 2. Implement a simple version of str_to_lower() using replace_all().
+str_replace_all("Hello! My name is Peter. Nice to meet you.", c("H" = "h", "M" = "m", "N" = "n"))
+
+lower <- letters
+names(lower) <- LETTERS
+str_replace_all("Hello! My name is Peter. Nice to meet you.", lower)
+str_replace_all(sentences, lower)
+
+# 3. Switch the first and last letters in words. Which of those strings are still words?
 
 
 
