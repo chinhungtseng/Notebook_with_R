@@ -2889,6 +2889,254 @@ str_replace_all("Hello! My name is Peter. Nice to meet you.", lower)
 str_replace_all(sentences, lower)
 
 # 3. Switch the first and last letters in words. Which of those strings are still words?
+words[words %in% str_replace(words, "^(.)(.*)(.)$", "\\3\\2\\1")]
+
+words[match(words, str_replace(words, "^(.)(.*)(.)$", "\\3\\2\\1"))] %>% 
+  tibble() %>% 
+  filter(!is.na(`.`)) %>% 
+  as.list()
+
+# 14.4.5 Splitting
+
+# Use str_split() to split a string up into pieces. 
+# For example, we could split sentences into words:
+sentences %>% 
+  head(5) %>% 
+  str_split(" ")
+
+# Because each component might contain a different number of pieces, this returns a list.
+# If you’re working with a length-1 vector, the easiest thing is to just extract the first element of the list:
+"a|b|c|d" %>% 
+  str_split("\\|") %>% 
+  .[[1]]
+
+# Otherwise, like the other stringr functions that return a list, 
+# you can use simplify = TRUE to return a matrix:
+sentences %>% 
+  head(5) %>% 
+  str_split(" ", simplify = TRUE)
+
+# You can also request a maximum number of pieces:
+
+fields <- c("Name: Hadley", "Country: NZ", "Age: 35")
+fields %>%
+  str_split(": ", n = 2, simplify = TRUE)
+
+# Instead of splitting up strings by patterns, you can also split up by character, 
+# line, sentence and word boundary()s:
+x <- "This is a sentence. This is another sentence."
+str_view_all(x, boundary("word"))
+str_view_all(x, "[^ ]+\\b")
+
+str_split(x, " ")[[1]]
+str_split(x, boundary("word"))[[1]]
+
+# 14.4.5.1 Exercises
+# 1. Split up a string like "apples, pears, and bananas" into individual components.
+x <- "apples, pears, and bananas"
+str_split(x, boundary("word"))[[1]]
+
+str_split(x, ", and |, ")[[1]]
+
+str_extract_all(x, '[^ ]+\\b')[[1]]
+
+# 2. Why is it better to split up by boundary("word") than " "?
+  
+## boundary("word") con extract only a word in the string without any , or . or - or + .....charactors.
+
+# 3. What does splitting with an empty string ("") do? 
+#    Experiment, and then read the documentation.
+?str_split
+a <- str_split(x, "")
+b <- str_split(x, boundary("character"))
+identical(a, b)
+## An empty pattern, "", is equivalent to boundary("character").
+
+# 14.4.6 Find matches
+# str_locate() and str_locate_all() give you the starting and ending positions of each match.
+# These are particularly useful when none of the other functions does exactly what you want. 
+# You can use str_locate() to find the matching pattern, str_sub() to extract and/or modify them.
+
+# 14.5 Other types of pattern
+
+# When you use a pattern that’s a string, it’s automatically wrapped into a call to regex():
+
+# The regular call:
+str_view(fruit, "nana")
+# Is shorthand for 
+str_view(fruit, regex("nana"))
+
+# You can use the other arguments of regex() to control details of the match:
+# 1. ignore_case = TRUE allows characters to match either their uppercase or lowercase forms. 
+#    This always uses the current locale.
+bananas <- c("banana", "Banana", "BANANA")
+str_view(bananas, "banana")
+
+str_view(bananas, regex("banana", ignore_case = TRUE))
+
+# 2, multiline = TRUE allows ^ and $ to match the start and end of each line 
+#    rather than the start and end of the complete string.
+x <- "Line 1\nLine 2\nLine 3"
+
+str_extract_all(x, "^Line")[[1]]
+
+str_extract_all(x, regex("^Line", multiline = TRUE))[[1]]
+
+# 3. comments = TRUE allows you to use comments and white space to make complex regular expressions 
+#    more understandable. Spaces are ignored, as is everything after #.
+#    To match a literal space, you’ll need to escape it: "\\ ".
+phone <- regex("
+  \\(?     # optional opening parens
+  (\\d{3}) # area code
+  [) -]?   # optional closing parens, space, or dash
+  (\\d{3}) # another three numbers
+  [ -]?    # optional space or dash
+  (\\d{3}) # three more numbers
+  ", comments = TRUE)
+
+phone <- "\\(?(\\d{3})[) -]?(\\d{3})[ -]?(\\d{3})"
+
+str_match("514-791-8141", phone)
+
+# 4. dotall = TRUE allows . to match everything, including \n.
+
+# There are three other functions you can use instead of regex():
+
+# 1. fixed(): matches exactly the specified sequence of bytes.
+#    It ignores all special regular expressions and operates at a very low level. 
+#    This allows you to avoid complex escaping and can be much faster than regular expressions. 
+#    The following microbenchmark shows that it’s about 3x faster for a simple example.
+microbenchmark::microbenchmark(
+  fixed = str_detect(sentences, fixed("the")),
+  regex = str_detect(sentences, "the"),
+  times = 20
+)
+
+system.time(replicate(20, str_detect(sentences, fixed("the"))))
+system.time(replicate(20, str_detect(sentences, "the")))
+
+# Beware using fixed() with non-English data. 
+# It is problematic because there are often multiple ways of representing the same character.
+# For example, there are two ways to define “á”: either as a single character or as an “a” plus an accent:
+a1 <- "\u00e1"
+a2 <- "a\u0301"
+c(a1, a2)
+a1 == a2
+
+# They render identically, but because they’re defined differently, fixed() doesn’t find a match.
+# Instead, you can use coll(), defined next, to respect human character comparison rules:
+str_detect(a1, fixed(a2))
+
+str_detect(a2, coll(a2))
+
+# 2. coll(): compare strings useing standard collation rules. This is useful for doing case insensitive matching.
+#    Note that coll() takes a locale parameter that controls which rules are used for comparing characters.
+#    Unfortunately different parts of the world use different rules!
+
+# That means you also need to be aware of the difference
+# When doing case insensiteve matches:
+i <- c("I", "İ", "i", "ı")
+
+str_subset(i, coll("i", ignore_case = TRUE))
+
+str_subset(i, coll("i", ignore_case = TRUE, locale = "tr"))
+
+# Both fixed() and regex() have ignore_case arguments, but they do not allow you to pick the locale:
+# they always use the default locale. You can see what that is with the following code;
+# more on stringi later.
+stringi::stri_locale_info()
+
+# The downside of coll() is speed;because the rules for recogniseing which characters are the sane are complicated,
+# coll() is relatively slow compared to regex() and fixed().
+
+# 3. As you saw with str_split() you can use boundary() t match boundaries. 
+# You can also use it with the other functions:
+x <- "This is a sentence."
+str_view_all(x, boundary("word"))
+str_extract_all(x, boundary("word"))
+
+# 14.5.1 Exercises
+# 1. How would you find all strings containing \ with regex() vs. with fixed()?
+x <- "R\\Python\\Java\\SQL"
+
+str_view_all(x, regex("\\\\")) 
+str_view_all(x, fixed("\\")) 
+## Because fixed do not use regex, so just using "\\", rather than using"\\\\"
+
+# 2. What are the five most common words in sentences?
+
+## (1)
+str_extract_all(sentences, boundary("word"), simplify = TRUE) %>% 
+  as_tibble() %>% 
+  gather(V1:V12, key = "aaa", value = "word") %>% 
+  mutate(word = str_to_lower(word)) %>% 
+  count(word, sort = TRUE)
+
+## (2)
+words_x <- str_split(sentences, boundary("word"), simplify = TRUE) %>%
+  as.vector()
+tibble(word = str_to_lower(words_x)) %>% 
+  count(word, sort = TRUE)
+
+## (3)
+tibble(word = str_to_lower(words_x)) %>% 
+  group_by(word) %>% 
+  summarise(n = n()) %>% 
+  arrange(desc(n))
+
+str_split(sentences, boundary("word"), simplify = TRUE) %>% 
+  as.vector() %>% tibble() %>% 
+  rename("word" = ".") %>% 
+  count(word, sort =TRUE)
+
+# 14.6 Other uses of regular expressions
+# There are two useful function in base R that also use regular expressions:
+
+# 1. apropos() searches all objects available from the global environment.
+# This is useful if you can't quite remember the name of the function.
+apropos("replace")
+
+# 2. dir() lists all the files in a directory. The pattern argument takes a regular expression and only
+#    return file names that match the pattern.
+#    For example, you can find all the R Markdown files in the current directory with:
+head(dir(pattern = "\\.Rmd$"))
+
+# (If you're more comfortale with "golbs" like *.Rmd, you can convert them to regular expressions with globwrx() ):
+
+# 14.7 stringi
+# stringr is built on top of the stringi package. stringr is useful when you're learning because it exposes a minimal set of functions,
+# which have been carefully picked to handle the most common string manipulation funcitons.
+# stringi, ont the other hand, is designed to be comprehensive. It contains almost every function you might ever need: stringi has 234 functions to stringr's 46.
+
+# If you find yourself struggling to do something in stringr, it's worth taking a look at stringi.
+# The packages work very similarly, so you should be able to translate your stringr knowledge in a natural way.
+# The main difference is the predix: str_ vs. stri_.
+
+# 14.7.1 Exercises
+# 1. Find the stringi functions that:
+#    (1) Count the number of words.
+#    (2) Find duplicated strings.
+#    (3) Generate random text.
+library(stringi)
+apropos("stri_")
+
+## (1) 
+str_count(words, "[^ ]+\\b") %>% sum()
+stri_count_words(words) %>% sum()
+
+## (2)
+apropos("duplicate")
+stri_duplicated_any(words)
+
+## (3)
+stri_rand_strings(1000, 5, pattern = "[0-9]")
+
+# 2. How do you control the language that stri_sort() uses for sorting?
+?stri_sort
+stri_sort(c("hladny", "chladny"), locale="pl_PL")
+
+# --------------------------------------------------------------------------------------------------
+
 
 
 
