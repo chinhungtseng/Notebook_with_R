@@ -2002,7 +2002,7 @@ setdiff(df1, df2)
 setdiff(df2, df1)
 
 # --------------------------------------------------------------------------------------------------
-# Strings
+# 14 Strings
 
 # 14.1 Introduction
 # This chapter introduces you to string manipulation in R. 
@@ -3470,7 +3470,7 @@ gss_cat %>%
                                 )) %>% 
   count(rincome)
 # --------------------------------------------------------------------------------------------------
-# Dates and times
+# 16 Dates and times
 
 # 16.1 Introduction
 # This chapter will show you how to work with dates and times in R. At first glance, dates and times seem simpe.
