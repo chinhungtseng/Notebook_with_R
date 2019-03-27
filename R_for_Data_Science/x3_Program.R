@@ -1211,7 +1211,7 @@ library(tidyverse)
 
 # The chief difference between atomic vectors and lists is that atomic vectors are homegeneous, while lists can be heterogeneous.
 # There's one other related object: NULL. NULL is often used to represent the absence of a vector
-# (as opposed to NA wh ich is used to represent the absence of a value in a vector).
+# (as opposed to NA which is used to represent the absence of a value in a vector).
 # NULL typically behaves like a vector of length 0. Figure 20.1 summarises the interrelationships.
 
 # Vectors
@@ -1333,7 +1333,7 @@ NA_character_  # character
 # However, there are some functions that are strict about their inputs, so it's useful to have this knowledgesitting in your back
 # pocket so you can be specific when needed.
 
-# 20.3.4 Exercises
+# 20.3.5 Exercises
 
 # 1. Describe th difference between is.finite(x) and !is.infinite(x).
 ?is.infinite()
@@ -1358,23 +1358,436 @@ dplyr::near
 
 # 3 . A logical vector can take 3 possible values. How many possible values can an integer vector take?
 #     How many possible values can a double take? Use google to do some research.
+
+## integer 
+?integer
 .Machine$integer.max
+## the largest integer which can be represented. Always 2^31 - 1 = 2147483647.
+## but I don't know why the length need to -1 
+## so I search on the stackoverflow for answer:
+## 2^32 possible values
+## − 2^31 values used for negative integers
+## − 1 value used for zero
+## = 2^31−1 values available for positive integers
+## https://stackoverflow.com/questions/3826704/why-int32-has-max-value-231-1
 
+## double 
+?double
+# Double-precision values
+# All R platforms are required to work with values conforming to the IEC 60559 (also known as IEEE 754) standard.
+# This basically works with a precision of 53 bits, and represents to that precision a range of absolute values from about 2e-308 to 2e+308. 
+# It also has special values NaN (many of them), plus and minus infinity and plus and minus zero (although R acts as if these are the same).
+# There are also denormal(ized) (or subnormal) numbers with absolute values above or below the range given above but represented to less precision.
+.Machine$double.xmax
+## 1.797693e+308
+.Machine$double.base
+## 2
+.Machine$double.digits
+## 53
+.Machine$double.eps
+## 2.220446e-16
+.Machine$double.neg.eps
+## 1.110223e-16
+## .Machine$double.eps 是 R 中不同數值的最小差異值，如果兩個不同數值的差異小於這個值，
+## 那麼 R 會將兩個數值視為相同的，而 all.equal 在判斷兩個向量是否相同時，也是使用這個值
 
-
-
-
-
-
-
-
+## https://blog.gtwang.org/r/r-variables-and-workspace/
+## https://en.wikipedia.org/wiki/IEEE_754
 
 # 4. Brainstorm at least four functions that allow you to convert a double to an integer.
 #    How do they differ? Be precise.
 
+# 5. What functions from the readr package allow you to turn a string into logical, 
+#    integer, and double vector?
+readr::parse_logical()
+readr::parse_integer()
+readr::parse_double()
+
+# 20.4 Using atomic vectors
+# Note that you understand the diffenent type os atomic vector, 
+# it's useful to review some of the important tools for working with them. These include:
+# 1. How to convert from one type to another, and when that happens automatically.
+# 2. How to tell if an obect os a specific type of vector.
+# 3. What happens when you work with vectors of different lengths.
+# 4. How to name the elements of a vector.
+# 5. How to pull out elements of interest.
+
+# 20.4.1 Coercion
+
+# There are two ways to convert, or coerce, one type of vector to another:
+# 1. Explicit coercion happens when you call a function ike as.logical(), as.integer(), as.double(), or as.character().
+#    Whenever you find yourself using explicit coercion, you should always check thether you can make the fix upstream, 
+#    so that the vector never had the wrong type in the first place.
+#    For example, you may need to tweak your readr col_types specification.
+# 2. Implicit coercion happens when you use a vector in a specific context that expects a certain type of vector.
+#    For example, when you use a logical vector with a numeric summary function, 
+#    or when you use a double vector where an integer vector is expected.
+
+# Because explicit coercion is used relatively rarely, and is largely easy to understand, I'll focus on implicit coercion here.
+
+# You've alerady senn the most important type of implicit coercion: using a logical vector in a numeric context.
+# In this case TRUE is converted to 1 and FALSE converted to 0.
+# That means the sum of a logical vector is the number of trues, and the mean of a logical vector is the proportion of trues:
+x <- sample(20, 100, replace = TRUE)
+y <- x > 10
+sum(y) # how many are greater than 10?
+mean(y) # what proportion are greater than 10?
+
+# You may see some code (typically older) that relies on implicit coercion in the opposite direction, from intiger to logical:
+if (length(x)) {
+  # do something
+}
+
+# In this case, 0 is converted to FALSE and everything else is converted to TRUE.
+# I think this makes it hearder to understand your code, and I don't recommend it. Instead be explicit length(x) > 0.
+
+# It's also important to understand what happens when you try and create a vector containing multiple types with c(): the most complex type always wins.
+typeof(c(TRUE, 1L))
+typeof(c(1L, 1.5))
+typeof(c(1.5, "a"))
+
+# An atomic vector can not have a mix of diffenent types because the type is a property of the complete vector, not the individual elements.
+# If you need to mix multiple types in the smae vector, you should use a list, thich you'll learn about shortly.
+
+# 20.4.2 Test functions
+
+# Sometimes you want to do different things based on the type of vector. One option is to use typeof().
+# Another is to use a test funciton which returns a TRUE or FALSE.
+# Base R provedes many functions like is.vector() and is.atomic(), but they often return surprision results.
+# Instead, it's safer to use the is_* functions proveded by purrr, which are summarised in the table below.
+
+# |----------------|------|------|------|------|------|
+# |                | lgl  | int  | dbl  | chr  | list |
+# |----------------|------|------|------|------|------|
+# | is_logical()   | x    |      |      |      |      |
+# |                |      |      |      |      |      |
+# | is_integer()   |      | x    |      |      |      |
+# |                |      |      |      |      |      |
+# | is_double()    |      |      | x    |      |      |
+# |                |      |      |      |      |      |
+# | is_numeric()   |      | x    | x    |      |      |
+# |                |      |      |      |      |      |
+# | is_character() |      |      |      | x    |      |
+# |                |      |      |      |      |      |
+# | is_atomic()    | x    | x    | x    | x    |      |
+# |                |      |      |      |      |      |
+# | is_list()      |      |      |      |      | x    |
+# |                |      |      |      |      |      |
+# | is_vector()    | x    | x    | x    | x    | x    |
+# |----------------|------|------|------|------|------|
+
+# Each predicate also comes with a "scalar" version, like is_scalar_atomic(), which checks that the length is 1.
+# This is useful, for example, if you want to check that an argument to your function is a single logical value. 
+
+# 20.4.3 Scalars and recycling rules
+
+# As well as implicitly coercing the types of vectors to be compatible, R will also implicitly coerce the length of vectors.
+# This is called vector recycling, because the shorter vector is repeated ,or recycled, to the same length as the longer vector.
+
+# This is generally most useful whaen you are micing vectors and "scalars". I put scalars in quotes because R doesn't actually have scalars:
+# instead, a single number is a vector of length 1. Because there are no scalars, ost built-in functions are vectorised, 
+# meaning that they will operate on a vector of numbers. That's why, for example, this code works:
+sample(10) + 100
+
+runif(10) > 0.5
+
+# In R, basic mathematical operations work with vectors. 
+# That means that you should never need to perform ecplicit iteration when performing simple mathematical computations.
+
+# It's intuitive what should happen if you add two vectors of the same length, or a vector and a "scalar",
+# but what happens if you add two vectors of different lengths?
+1:10 + 1:2
+
+# Here, R will expand the shortest vector to the same length as the longest, so called recycling.
+# This is silent except when the length of the longer is not an integer mutiple of the length of the shorter:
+1:10 + 1:3
+
+# While vector recycling can be used to create very succinct, clever code, it can also slently conceal problems.
+# For this reason, the vectorised functions in tidyverse will throw errors when you recyble anything other than a scalar.
+# If you do want to recycle, you'll need to do it yourself with rep():
+tibble(x = 1:4, y = 1:2)
+tibble(x = 1:4, y = rep(1:2, 2))
+
+tibble(x = 1:4, y = rep(1:2, each = 2))
+
+# 20.4.4 Naming vectors
+
+# All types of vectors can be named. You can name them during creation with c():
+c(x = 1, y = 2, z = 4)
+
+# Or after the fact with purrr::set_names()
+set_names(1:3, c("a", "b", "c"))
+
+# Named vectors are most useful for subsetting, described next.
+
+# 20.4.5 Subsetting
+
+# So far we've used dplyr::filter() to filter the rows in a tibble. 
+# filter() only works with tibble, so we'll need new tool for vectors: [.
+# [ is the subsetting function, and is called like x[a].
+# There are four types of things that you can subset a vector with:
+# 1. A numeric vector containing only integers. The integers must either be all positive, all negative, or zero.
+#    Subsetting with positive integers keeps the elements at those positions:
+x <- c("one", "two", "three", "four", "five")
+x[c(3, 2, 5)]
+
+#    By repeating a position, you can actually make a longer output tha n input:
+x[c(1, 1, 5, 5, 5, 2)]
+
+#    Negative values drop the elements at the specified positions:
+x[c(-1, -3 ,-5)]
+
+#    It's an error to mix poditive and vegative values:
+x[c(1 ,-1)]
+
+#    The error message mentions subsetting with zero, thich returns no values:
+x[0]
+
+#    This is not useful very often, but it can be helpful if you want to create unusual data structures to test your functions with.
+
+# 2. Subsetting with a logical vector keeps all values corresponding to a TRUE value.
+#    This is most often useful in conjunction with the comparison functions.
+x <- c(10, 3, NA, 8, 1, NA)
+
+# All non-missing values of x
+x[!is.na(x)]
+
+# All even(or missing!) values of x
+x[x %% 2 == 0]
+
+# 3. If you have a named vector, you can subset it with a character vector:
+x <- c(abc = 1, def = 2, xyz = 5)
+x[c("xyz", "def")]
+#    Like with positive integer, you can also use a character vector to duplicate individual entries.
+
+# 4. The simplest type of subsetting is nothing, x[], which returns the complete x.
+#    This is not useful for subsetting, but it is useful when subsetting matrices (and other high dimensional structures)
+#    because it lets you select all the rows or all the columns, by leaving that index blank.
+#    For exmaple, if x is 2d, x[1, ] selects the first row and all the columns, and x[, -1] selects all rows and all columns except the first.
+
+# To learn more about the applications of subsetting, reading the "Subsetting" chapter of Advanced R:
+# http://adv-r.had.co.nz/Subsetting.html#applications.
+
+# there is an important variation of [ called [[. [[ only ever extracts a single element, and always drops names.
+# It's good idea to use it whenever you want to make it clear that you're extracting a single item, as in a for loop.
+# The distinction between [ and [[ os most important for lists, as we'll see shortly.
+
+# 20.4.6 Exercises
+
+# 1. What does mean(is.na(x)) tell you about a vector x? 
+#    What about sum(!is.finite(x))?
+
+## (1) mean(is.na(x)) is calculates the propotion of missing values in the vector of x.
+x <- c(1, 2, 3, 4, 5, 6, 7, NA, 8, NA)
+mean(is.na(x))
+
+## (2)  sum(!is.finite(x)) will calsulates the number of elements in the vector of x that are equal to NA, NaN, +Inf and -Inf.
+x <- c(Inf, -Inf, NA, NaN, -2:2)
+sum(!is.finite(x))
+
+x[!is.finite(x)] # Inf -Inf   NA  NaN
+x[is.infinite(x)] # Inf -Inf
+
+# 2. Carefully read the documentation of is.vector(). What does it actually test for?
+#    Why does is.atomic() not agree with the definition of atomic vectors above?
+?is.vector()
+
+## For as.vector, a vector (atomic or of type list or expression). 
+## All attributes are removed from the result if it is of an atomic mode, but not in general for a list result. 
+## The default method handles 24 input types and 12 values of type: 
+## the details of most coercions are undocumented and subject to change.
+
+## For is.vector, TRUE or FALSE. 
+## is.vector(x, mode = "numeric") can be true for vectors of types "integer" or "double" whereas 
+## is.vector(x, mode = "double") can only be true for those of type "double".
+
+?is.atomic()
+## It is common to call the atomic types ‘atomic vectors’, but note that is.vector imposes further restrictions: 
+## an object can be atomic but not a vector (in that sense).
+
+# 3. Compare and contrast setNames() with purrr::set_names().
+?setNames()
+?purrr::set_names()
 
 
-# 5. What functions from the readr package allow you to turn a string into logical, integer, and double vector?
+## (1) the purrr:set_names() will check the length of the nm arguent is the same length as the x that is being named.
+##     If the length is not same, then it will prompt a error message.
+##     but the setName() not error instead of set vector's name to <NA>
+setNames(1:4, c("a", "b"))
+set_names(1:4, c("a", "b"))
+
+## (2) If x already has names, you can provide a function or formula to transform the existing names. 
+##     In that case, ... is passed to the function.
+x <- c(a = 1, b = 2, c = 3, d = 4)
+x
+purrr::set_names(x, str_to_upper)
+
+## (3) In all other cases, nm and ... are coerced to character. But setName() will prompt error. 
+setNames(1:4, "a", "b", "c", "d")
+purrr::set_names(1:4, "a", "b", "c", "d")
+
+# 4. Create functions that take a vector as input and returns:
+#    (1) The last value. Should you use [ or [[?
+#    (2) The elements at even numbered positions.
+#    (3) Every element except the last value.
+#    (4) Only even numbers (and no missing values).
+
+x <- c(1:20)
+## (1)
+
+last_value <- function(x) {
+  if(length(x) == 0) {
+    return(0)
+  } 
+  return(x[[length(x)]])
+}
+last_value(x)
+
+## (2)
+even_position <- function(x) {
+  return(x[1:length(x) %% 2 == 0])
+}
+even_position(x)
+even_position(letters[1:10])
+
+## (3)
+drop_last_element <- function(x) {
+  return(x[-length(x)])
+}
+drop_last_element(x)
+
+## (4) 
+x <- c(1:5, NA, -5:5)
+even_number <- function(x) {
+  return(x[!is.na(x) & x %% 2 == 0])
+}
+even_number(x)
+
+# 5. Why is x[-which(x > 0)] not the same as x[x <= 0]?
+x <- c(Inf, -Inf, NA, NaN, -2:2)
+x[-which(x > 0)]
+x[x <= 0]
+
+## -Inf   NA  NaN   -2   -1    0
+## -Inf   NA   NA   -2   -1    0
+## We can see the different between x[-which(x > 0)] and x[x <= 0] is NA value.
+
+# 6. What happens when you subset with a positive integer that's bigger than length of the vector?
+#    What happens when you subset with a name that doesn't exist?
+## (1) If you subset with bigger value than length of the vector, it will reutrn NA value.
+x <- set_names(c(1:20), letters[1:length(x)])
+x[length(x) + 1]
+
+## (2) It also return NA value without error.
+x[c('a', 'b', 'z')]
+
+## (3) If you want to subset the value with a name theat doesn't exist, it will error.
+x[['z']] # Error in x[["z"]] : subscript out of bounds
+
+# 20.5 Recursive vectors (lists)
+
+# Lists are a step up in complexity from atomic vectors, because lists can contain other lists.
+# This makes them suitable for representing hierarchical or tree-like structures.
+# You create a list with list():
+x <- list(1, 2, 3)
+x
+
+# A very useful tool for working with lists is str() because it focusses on the structure, not the contents.
+str(x)
+
+x_named <- list(a = 1, b = 2, c = 3)
+str(x_named)
+
+# Unlike atomic vectors, list() can contain a mix of objects:
+y <- list("a", 1L, 1.5, TRUE)
+str(y)
+
+# Lists can even contain other lists!
+z <- list(list(1, 2), list(3, 4))
+str(z)
+
+# 20.5.1 Visualising lists
+
+# To explain more complicated list manipulation functions, it's helpful to have a visual representation of lists.
+# For example, take these three lists:
+x1 <- list(c(1, 2), c(3, 4))
+x2 <- list(list(1, 2), list(3, 4))
+x3 <- list(1, list(2, list(3)))
+
+# I'll draw them as follows:
+#        x1                   X2                         x3
+# /------------\   /----------------------\   /---------------------\
+# |  |---|---| |   |  /----------------\  |   |        |---|        |
+# |  | 1 | 2 | |   |  |  |---|  |---|  |  |   |        | 1 |        |
+# |  |---|---| |   |  |  | 1 |  | 2 |  |  |   |        |---|        |
+# |  | 3 | 4 | |   |  |  |---|  |---|  |  |   |                     |
+# |  |---|---| |   |  \----------------/  |   |  /---------------\  |
+# \ -----------/   |                      |   |  |     |---|     |  |
+#                  |  /----------------\  |   |  |     | 2 |     |  |
+#                  |  |  |---|  |---|  |  |   |  |     |---|     |  |
+#                  |  |  | 1 |  | 2 |  |  |   |  |  /---------\  |  |
+#                  |  |  |---|  |---|  |  |   |  |  |  |---|  |  |  |
+#                  |  \----------------/  |   |  |  |  | 3 |  |  |  |
+#                  \----------------------/   |  |  |  |---|  |  |  |
+#                                             |  |  \---------/  |  |
+#                                             |  \---------------/  |
+#                                             \---------------------/
+
+# There are three principles:
+# 1. Lists have rounded corners. Atomic vectors have square corners.
+# 2. Children are drawn inside their parent, and have a slightly darker beckground to make it easier to see the hierarchy.
+# 3. The orientation of the children (i.e. rows or columns) isn't important, so I'll pick a row or column orientation
+#    to either save space or illustrate an important property in the example.
+
+# 20.5.2 Subsetting 
+
+# There are three ways to subset a list, which I'll illustrate with a list named a:
+a <- list(a = 1:3, b = "a string", c = pi, d = list(-1, -5))
+
+# 1. [ extracts a sub-list. The result will always be a list.
+str(a[1:2])
+str(a[4])
+
+#    Like with vectors, you can subset with a logical, integer, or character vector.
+
+# 2. [[ extracts a single component from a list. It removes a livel of hierarchy from the list.
+str(a[[1]])
+str(a[[4]])
+
+# 3. $ is a shorthand for extracting named elements of a list. It works similarly to [[ except that you don't need to use quotes.
+a$a
+a[["a"]]
+
+# The distinction between [ and [[ is really important for lists, because [[ drills down into the list while [ returns a new, smaller list.
+# Compare the code and output above with the visual representation in Figure 20.2.
+
+#          a                  a[1:2]                  a[4]                a[[4]]
+# |-----------------|   |-----------------|   |-----------------|    |-------------|
+# |  |---|---|---|  |   |  |---|---|---|  |   |                 |    | |---| |---| | 
+# |  | 1 | 2 | 3 |  |   |  | 1 | 2 | 3 |  |   |                 |    | |-1 | |-5 | |
+# |  |---|---|---|  |   |  |---|---|---|  |   |                 |    | |---| |---| |
+# |                 |   |                 |   |                 |    |-------------| 
+# | |-------------| |   | |-------------| |   |                 |
+# | | "a string"  | |   | | "a string"  | |   |                 |       a[[4]][1]
+# | |-------------| |   | |-------------| |   |                 |    |-------------|
+# |                 |   |                 |   |                 |    | |---|       | 
+# | |-------------| |   |                 |   |                 |    | |-1 |       |
+# | | 3.141525    | |   |                 |   |                 |    | |---|       |
+# | |-------------| |   |                 |   |                 |    |-------------| 
+# |                 |   |                 |   |                 |
+# | |-------------| |   |                 |   | |-------------| |      a[[4]][[1]]
+# | | |---| |---| | |   |                 |   | | |---| |---| | |
+# | | |-1 | |-5 | | |   |                 |   | | |-1 | |-5 | | |        |---|
+# | | |---| |---| | |   |                 |   | | |---| |---| | |        |-1 |
+# | |-------------| |   |                 |   | |-------------| |        |---|
+# |                 |   |                 |   |                 | 
+# |-----------------|   |-----------------|   |-----------------|
+
+# Figuare 20.2: Subsetting a list, visually.
+
+
+
+
 
 
 
