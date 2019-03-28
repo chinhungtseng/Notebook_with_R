@@ -1784,6 +1784,245 @@ a[["a"]]
 # \-----------------/   \-----------------/   \-----------------/
 # Figuare 20.2: Subsetting a list, visually.
 
+# 20.5.3 Lists of condiments
+
+# The difference between [ and [[ is very important, but it's easy to get confused.
+# To help you remember, let me show you unusual pepper shaker.
+
+#   |xxxxxxxxxxxxx|
+#  |xxxxxxxxxxxxxxx|
+#  |xxxxxxxxxxxxxxx|
+#  |               |
+#  |  |------ -|   |
+#  |  |        ||  |
+#  |  | pepper ||| |
+#  |  |        ||| |   <- pepper shaker conaining multiple pepper packer.
+#  |  |--------||| |
+#  |  |--------||| |
+#  |  |--------||| |
+#  |---------------|
+
+# If this pepper shaker is your list x, then, x[1] is a pepper shaker containing a single pepper packet:
+
+#   |xxxxxxxxxxxxx|
+#  |xxxxxxxxxxxxxxx|
+#  |xxxxxxxxxxxxxxx|
+#  |               |
+#  |  |------ -|   |   <- pepper shaker containing a single pepper packet.
+#  |  |        |   |
+#  |  | pepper |   |
+#  |  |        |   |
+#  |  |--------|   |
+#  |               |
+#  |               |
+#  |---------------|
+
+# x[2] would look the same, but would contain the second packet.
+# x[1:2] would be a pepper shaker containing two pepper packets.
+# x[[1]] is:
+
+# |--------|   
+# |        |   
+# | pepper |   <- pepper package
+# |        |   
+# |--------|   
+
+# If you wanted to get the content of the pepper package, you'd need x[[1]][[1]]:
+
+#     . , .
+#   ,. . ., .
+#   .., ,...   <- pepper
+#   ..... . . 
+#    , . , ,
+
+# 20.5.4 Exercises
+
+# 1. Draw the following lists as nested sets:
+#    (1) list(a, b, list(c, d), list(e, f))
+#    (2) list(list(list(list(list(list(a))))))
+
+## (1) list(a, b, list(c, d), list(e, f))
+# /---------------------\
+# |    |---|  |---|     |
+# |    | a |  | b |     |
+# |    |---|  |---|     |
+# |                     |
+# |  /---------------\  |
+# |  |  |---| |---|  |  |
+# |  |  | e | | f |  |  |
+# |  |  |---| |---|  |  |
+# |  \---------------/  |
+# |                     |
+# |  /---------------\  |
+# |  |  |---| |---|  |  |
+# |  |  | e | | f |  |  |
+# |  |  |---| |---|  |  |
+# |  \---------------/  |
+# |                     |
+# \---------------------/
+
+## (2) list(list(list(list(list(list(a))))))
+# /---------------------------------------\
+# |                                       |
+# |  /---------------------------------\  |
+# |  |                                 |  |
+# |  |  /---------------------------\  |  |
+# |  |  |                           |  |  |
+# |  |  |  /---------------------\  |  |  |
+# |  |  |  |                     |  |  |  |
+# |  |  |  |  /---------------\  |  |  |  |
+# |  |  |  |  |               |  |  |  |  |
+# |  |  |  |  |  /---------\  |  |  |  |  |
+# |  |  |  |  |  |  |---|  |  |  |  |  |  |
+# |  |  |  |  |  |  | a |  |  |  |  |  |  |
+# |  |  |  |  |  |  |---|  |  |  |  |  |  |
+# |  |  |  |  |  \---------/  |  |  |  |  |
+# |  |  |  |  |               |  |  |  |  |
+# |  |  |  |  \---------------/  |  |  |  |
+# |  |  |  |                     |  |  |  |
+# |  |  |  \---------------------/  |  |  |
+# |  |  |                           |  |  |
+# |  |  \---------------------------/  |  |
+# |  |                                 |  |
+# |  \---------------------------------/  |
+# |                                       |   
+# \---------------------------------------/
+
+# 2. What happens if you subset a tibble as if you're subsetting a list?
+#    What are the key differences between a list and a tibble?
+
+x <- tibble(x = 1:15, y = letters[1:length(x)], z = str_to_upper(y))
+x
+
+## subsetting x by column's name
+x['x']
+
+## subsetting x by index
+x[2:3]
+
+## subsetting x by explict index of row and column
+x[1, ]
+
+# 20.6 Attributes
+
+# Any vector can contain arbitrary additional metadata through its attributes.
+# You can think of attributes as named list of vectors that can be attached to any object.
+# You can get and set individual attribute velues with attr() or see then all at once with attributes().
+x <- 1:10
+attr(x, "greeting") # NULL
+
+attr(x, "greeting") <- "Hi!"
+attr(x, "farewell") <- "Bye!"
+attributes(x)
+
+# There are three important attributes that are used to implement fundamental parts of R:
+# 1. Names are used to name the elemnets of a vector.
+# 2. Dimensions (dims, for shourt) make a vector behave like a matrix or array.
+# 3. Class is used to implement the s3 object oriented system.
+
+# You've seen names above, and we won't cover dimensions because we don't use matrices in this book.
+# It remains to describe the class, which controls how generic funcitons work.
+# Generic functions are key to object oriented programming in R, because they make funcitons behave differently for different classes of input.
+# A detailed discussion of object oriented programming is beyond the scope of this book, but you can read more about it in Advanced R at
+# http://adv-r.had.co.nz/OO-essentials.html#s3.
+
+# Here's what a typical generic function looks like:
+as.Date
+# The call to "UseMethod " means that this is a generic function, and it will call a specific method, a function, based on the class of the first argument.
+# (All methods are funcitons; not all funcitons are methods). You can list all the methods for a generic with methods():
+methods("as.Date")
+
+# For example, if x is a character vector, as.Date() will call as.Date.character(); if it's a factor, it'll call as.Date.factor().
+
+# You can see the specific implementation of a methos with getS3method():
+getS3method("as.Date", "default")
+
+getS3method("as.Date", "numeric")
+
+# The most important S3 generic is print(): it controls how the object is printed when you type its name at the console.
+# Other important generics are the subsetting funciions [, [[, and $.
+
+# 20.7 Augmented vectors
+
+# Atomic vectors and lists are the building blocks for other important vector types like factors and dates.
+# I call these augmented vectors, because they are vectors with additional attributes, including class.
+# Because augmented vectors have a calss, they behave differently to the atomic vector on which they are built.
+# In this book, we make use of four important augmented vectors:
+# 1. Factors
+# 2. Dates
+# 3. Date-times
+# 4. Tibbles
+# These are described below.
+
+# 20.7.1 Factors 
+# Factors are designed to represent catdgorical data that can take a fixed set of possible values.
+# Factors are built on top of integers, and have a levels attribute:
+x <- factor(c("ab", "cd", "ab"), levels = c("ab", "cd", "ef"))
+typeof(x)
+attributes(x)
+
+# 20.7.2 Dates and date-times
+# Dates in R are numeric vecors that represent the number of days since 1 January 1970.
+x <- as.Date("1971-01-01")
+unclass(x)
+typeof(x)
+attributes(x)
+
+# Date-times are numecir vectors with class POSIXct that represent the number of seconds since 1 January 1970.
+# (In case you were wondering, "POSIXct" stands for "Portable Operating System Interface", calendar time.)
+x <- lubridate::ymd_hm("1970-01-01 01:00")
+unclass(x)
+typeof(x)
+attributes(x)
+
+# The tzone attribute is optional. It controls how the time is printed, not what absolute time it refers to.
+attr(x, "tzone") <- "US/Pacific"
+x
+
+attr(x, "tzone") <- "US/Eastern"
+x
+
+# There is another type of date-times called POSIXlt. These are built o n top of named lises:
+y <- as.POSIXlt(x)
+typeof(y)
+attributes(y)
+
+# POSIXlts are rare inside the tidyverse. They do crop up in base R, because they are needed to extract specific components of a data, 
+# like the year or month. Since lubridate provides helpers for you to do this instead, you don't need them.
+# POSIXlt, you should always convert it to a regular data time lubriadate::as_datetime().
+
+# 20.7.3 Tibbles
+
+# Tibbles are augmented lists:they have calss "tbl_df" + "tbl" + "date.frame", and names(column) and row.names attributes:
+tb <- tibble::tibble(x = 1:5, y = 5:1)
+typeof(tb)
+attributes(tb)
+
+# The difference between a tibble and a list is that all the elements of a data frame must be vectors with the same length.
+# All functions that work with tibbles enforce this constraint.
+
+# Traditional data.frames have a very similar structure:
+df <- data.frame(x = 1:5, y = 5:1)
+typeof(df)
+attributes(df)
+
+# The main difference is the class. The calss of tibble includes "data.frame" 
+# which means tibbels inherit the regular data frame beharviour by default.
+
+# 20.7.4 Exercises
+# 1. What does hms::hms(3600) return? How doed it print? 
+#    What primitive type is the augmeted vector built on top of? What attributes does it use?
+
+
+
+
+# 2. Try and make a tibble that has columns wtih different lengths. What happens?
+
+
+
+
+
+# 3. Based on the definition above, is it ok to have a list as a column of a tibble? 
 
 
 
@@ -1792,6 +2031,4 @@ a[["a"]]
 
 
 
-
-# ----------------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------------
