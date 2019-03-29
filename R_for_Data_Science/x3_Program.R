@@ -2012,23 +2012,225 @@ attributes(df)
 # 20.7.4 Exercises
 # 1. What does hms::hms(3600) return? How doed it print? 
 #    What primitive type is the augmeted vector built on top of? What attributes does it use?
+x <- hms::hms(3600)
+x
+## It's return 3600 seconds == 1 hrs.
 
+typeof(x)
+## the primitive type is "double"
 
-
+attributes(x)
+## $class
+## [1] "hms"      "difftime"
+## $units
+## [1] "secs"
 
 # 2. Try and make a tibble that has columns wtih different lengths. What happens?
 
+## If you give the column with different, there are two situation:
+## (1) give a value and a vector: this will recycle the value as same as the length of vector.
+x <- tibble::tibble(x = 1:6, y = 2)
+x
 
-
-
+## (2) But if you give two different length of vector, it will prompt error message.
+x <- tibble::tibble(x = 1:6, y = 1:3)
+x
 
 # 3. Based on the definition above, is it ok to have a list as a column of a tibble? 
-
-
-
-
-
-
-
+## yes
+x <- tibble::tibble(a = 1:5, b = list(letters[1:5]))
 
 # ----------------------------------------------------------------------------------------------------------------------------
+# 21 Iteration
+
+# 21.1 Introduction
+
+# In funcitons, we talked about hoe important it is to reduce duplication in your code by creating funcitons instead of copying-and-pasting.
+# Reducing code duplication has three main benefits:
+# 1. It's easier to the intent of your code, because your eyes are drawn to what's different, not what stays the smae.
+# 2. It's easier to respond to changes in requirements. As your need change, you only need to make changes in one place, 
+#    rather than remembering to change every place that you copied-and-pasted the code.
+# 3. You're likely to have fewer bugs because each line of code is used in more places.
+
+# One tool for duplication is functions, which reduce duplication by identifying repeated patterns of code 
+# and extract them out into independent pieces that can be easily reused and update.
+# Another tool for reducing duplication is iteration, which helps you when you need to do the same thing to multiple inputs:
+# repeating the same operation on different columns, or on different datasets.
+# In this chapter you'll learn about two important iteration paradigms: imperative programming and functional programming.
+# On the imperative side you have tools like for loops and while loops, which are a great place to start because they make iteration very explicit,
+# so it's ovious what's happening.
+# However, for loops are quite verbose, and require quite a bit of bookkeeping code that is duplicated for every for loop.
+# Functional programming(FP) oggers tools to extract out that is duplicated code, so each common for loop pattern gets its own funciton.
+# Once you master the vocabulary of FP, you can solve many common iteration problems with less code, more ease, and fewer errors.
+
+# 21.1.1 Prerequisites
+
+# Once you've mastered the for loops provided by base R, you'll learn some of the powerful programming tools provided by purrr,
+# one of the tidyverse core packages.
+library(tidyverse)
+
+# 21.2 For loop
+
+# Imagine we have this simple tibble:
+df <- tibble(
+  a = rnorm(10), 
+  b = rnorm(10), 
+  c = rnorm(10), 
+  d = rnorm(10)
+)
+
+# We want to compute the median of each column. You could do with copy-and paste:
+median(df$a)
+median(df$b)
+median(df$c)
+median(df$d)
+
+# But that break our rule of thumb: never copy and paste more than twice. Instead, we could use a for loop:
+output <- vector("double", ncol(df)) # 1. output
+for (i in seq_along(df)) {           # 2. sequence
+  output[[i]] <- median(df[[i]])     # 3. body
+}
+output
+
+# Every for loop has three components;
+# 1. The output: output <- vector("double", length(x)). Before you start the loop, you must always allocate sufficient space for the output.s
+#    This is very important for efficiency: if you grow the for loop at each iteration using c() (for example), your for loop will be very slow.
+
+#    A general way of creating an empty vector of given length is the vector() function.
+#    It has two arguments: the type of the vector("logical", "integer", "double", "cahtacter", etc) and the length of the vector. 
+
+# 2. The sequence: i in seq_along(df). This determines what to loop over: each run of the for loop will assign i to a different value from seq_along(df).
+#    It's useful to think of i as a pronoun, like "it".
+
+#    You might not have seen seq_along() before. it's a safe version of the familiar 1:length(l), with an pmportant diffenence: 
+#    if you have a zero-length vector, seq_along() does the right thing: 
+y <- vector("double", 0)
+seq_along(y)
+1:length(y)
+
+#    You probably won't create zero-length vector deliberately, but it's easy to create them accidentally.
+#    If you use 1:length(x) instead of seq_along(x), you're likely to get a condusion error message.
+
+# 3. The body: output[[i]] <- median(df[[i]]). This is the code that does the work.
+#    It's run repeatedly, each time with a different value for i.
+#    The first iteration will run output[[1]] <- median(df[[1]]), the second will run output[[2]] <- median(df[[2]]), and so on.
+
+# That's all there is to the for loop! Now is a good time to practice creating some besic(and not so basic) for using the exercises below.
+# Then we'll move on some vauations of the for loop that hlep you solve other problems that will crop up in practice.
+
+# 21.2.1 Exercises
+
+# 1. Write for loops to:
+#    (1) Compute the mean of every column in mtcars.
+#    (2) Determine the type of each column in nycflights13::flights.
+#    (3) Compute the number of unique values in each column of iris.
+#    (4) Generate 10 random normals for each of µ = -10, 0, 10, and 100.
+#    think about the output, sequence, and body before you start writing the loop.
+
+## (1) Compute the mean of every column in mtcars.
+mtcars_col_mean <- vector("double", ncol(mtcars))
+names(mtcars_col_mean) <- names(mtcars)
+for (i in seq_along(col_mean)) {
+  mtcars_col_mean[[i]] <- mean(mtcars[[i]])
+}
+mtcars_col_mean
+
+## (2) Determine the type of each column in nycflights13::flights.
+flights_col_type <- vector("list", ncol(nycflights13::flights))
+names(flights_col_type) <- names(nycflights13::flights)
+for (i in seq_along(flights_col_type)) {
+  flights_col_type[[i]] <- typeof(nycflights13::flights[[i]])
+}
+flights_col_type
+
+## (3) Compute the number of unique values in each column of iris.
+unique_number <- vector("double", ncol(iris))
+names(unique_number) <- names(iris)
+for (i in seq_along(unique_number)) {
+  unique_number[[i]] <- n_distinct(iris[[i]])
+}
+unique_number
+
+## (4) Generate 10 random normals for each of µ = -10, 0, 10, and 100.
+n <- 10 
+mu <- c(-10, 0, 10, 100)
+normals <- vector("list", length(mu))
+for (i in seq_along(normals)) {
+  normals[[i]] <- rnorm(n, mean = mu[i])
+}
+normals
+
+# 2. Eliminate the for loop each of the following examples by taking advantage of an existing function that works with vectors:
+# (1)
+out <- ""
+for (x in letters) {
+  out <- stringr::str_c(out, x)
+}
+## (1)
+stringr::str_c(letters, collapse = "")
+
+# (2)
+x <- sample(100)
+sd <- 0
+for (i in seq_along(x)) {
+  sd <- sd + (x[i] - mean(x)) ^ 2
+}
+sd <- sqrt(sd / (length(x) - 1))
+## (2)
+sd(x)
+sqrt(sum((x - mean(x)) ^ 2) / (length(x) -1))
+
+# (3)
+x <- runif(100)
+out <- vector("numeric", length(x))
+out[1] <- x[1]
+for (i in 2:length(x)) {
+  out[i] <- out[i - 1] + x[i]
+}
+## (3)
+cumsum(x)
+
+# 3. Combine your funciton writing and for loop skills:
+#    (1) Write a for loop that prints() the lyrics to the children's song "Alice the camel".
+#    (2) Convert the nursery rhyme "ten in the bed" to a function. Generalise it to any number of people in any sleeping structure.
+#    (3) Convert the song "99 bottles of beer on the wall" to a function. Generalise to any number of any vessel containing any liquid on any surface.
+
+## (1)
+humps <- c("five", "four", "three", "two", "one", "no")
+for (i in humps) {
+  writeLines(str_c("Alice the camel has ", rep(i, 3), " humps."))
+  if (i == "no") {
+    cat("Now Alice is a horse.")
+  } else {
+    cat("So go, Alice, go.\n")
+  }
+  cat("\n")
+}
+
+## (2)
+
+
+
+
+
+
+# 4. It's common to see for loops that don't preallocate the output and instead increase the length of a vector at each step:
+output <- vector("integer", 0)
+for (i in seq_along(x)) {
+  output <- c(output, lengths(x[[i]]))
+}
+output
+#    How does this affect performance? Design and execute an experiment.
+
+
+
+
+
+
+
+
+
+
+
+
+
