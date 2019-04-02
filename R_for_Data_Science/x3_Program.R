@@ -2494,11 +2494,10 @@ for (var in names(trans)) {
   mtcars[[var]] <- trans[[var]](mtcars[[var]])
 }
 
-
-
-
-
-
+## This code will compute and convert value at the columns of disp and am.
+## The list of trans stores two function:
+## 1. disp: is multiplied by 0.0163871.
+## 2. am: convert (0,1) to (auto, manual) factor.
 
 # 21.4 For loops vs.functionals
   
@@ -2506,6 +2505,373 @@ for (var in names(trans)) {
 # This means that it's possible to wrap up for loops in a function, and call that function instead of using the for loop directly.
   
 # To see why this is important, condider(again) this simple data frmae:
-  
+df <- tibble(
+  a = rnorm(10),
+  b = rnorm(10),
+  c = rnorm(10),
+  d = rnorm(10)
+)
+
+# Imagine you want to compute the mean of every column. You could do that with a for loop:
+output <- vector("double", length(df))
+for (i in seq_along(df)) {
+  output[[i]] <- mean(df[[i]])
+}
+output
+
+# You realise that you're goning to want to compute the means of every column pretty frequently, 
+# so you extract it into a function:
+col_mean <- function(df) {
+  output <- vector("double", length(df))
+  for (i in seq_along(df)) {
+    output[[i]] <- mean(df[[i]])
+  }
+  output
+}
+
+# But then you think it'd also be helpful to be able to compute the median, and the standard deviation, 
+# so you copy and paste your col_mean() function and replace the mean() with median() and sd():
+col_median <- function(df) {
+  output <- vector("double", length(df))
+  for (i in seq_along(df)) {
+    output[i] <- median(df[[i]])
+  }
+  output
+}
+col_sd <- function(df) {
+  output <- vector("double", length(df))
+  for (i in seq_along(df)) {
+    output[i] <- sd(df[[i]])
+  }
+  output
+}
+
+# Uh oh! You've copied-and-pasted this code twice, so it's time to think about how to generalise it.
+# Notice that most of this code is for-loop boilerplate and it's hard to see the one thing
+# (mean(), median(), sd()) that is different between the functions.
+
+# What would you do if you saw a set of functions like this:
+f1 <- function(x) abs(x - mean(x)) ^ 1
+f2 <- function(x) abs(x - mean(x)) ^ 2
+f3 <- function(x) abs(x - mean(x)) ^ 3
+
+# Hopefully, you'd notice that there's a lot of duplication, and extract it out into an additional argument:
+f <- function(x, i) ags(x - mean(x)) ^ i
+
+# You're reduced the chance of bugs(because you now have 1/3 of the original code),
+# and made it easy to generalise to new situations.
+
+# We can do exactly the same thing with col_mean(), col_median() and col_sd() by adding an argument 
+# that supplies the function to apply to each column:
+col_summary <- function(df, fun) {
+  out <- vector("double", length(df))
+  for (i in seq_along(df)) {
+    out[i] <- fun(df[[i]])
+  }
+  out
+}
+col_summary(df, mean)
+col_summary(df, median)
+
+# The idea of passing a function to another function is extremely powerful idea, 
+# and it's one of the behavours that makes R a functional programming language.
+# It might take you a while to wrap your head around the idea, but it's worth th investment.
+# In the rest of the chapter, you'll learn about and use the purrr package, 
+# which provides functions that eliminate the need for many common for loops.
+# The apply family of functions in base R (apply(), lapply(), tapply(), etc) solve a similar problem,
+# but purrr is more consistent and thus is easier to learn.
+
+# The goal of using usrrr funcitons instead of for loops is to allow you break common list manipulation challenges into independent pieces:
+# 1. How can you solve the problem for a single element of the list? Once you've solved that problem,
+#    purrr takes care of generalising your solution to every element in the list.
+# 2. If you're solving a complex problem, how can you break it down into bite-sized pieces that allow you to advance one small step towards a solution?
+#    With purrr, you get lots of small pieces that you can compose together with the pipe.
+
+# This structure makes it easier to solve new problems. 
+# It also makes it easier to understand your solutions to old problems when you re-read your old code.
+
+# 21.4.1 Exercises
+
+# 1. Read the documentation for apply(). In the 2d case, what two for loop does it generalise?
+?apply
+## Returns a vector or array or list of values obtained by applying a function to margins of an array or matrix.
+
+## apply(X, MARGIN, FUN, ...)
+
+## X - an array, including a matrix.
+## MARGIN - a vector giving the subscripts which the function will be applied over. E.g., 
+##          for a matrix 1 indicates rows, 2 indicates columns, c(1, 2) indicates rows and columns. 
+##          Where X has named dimnames, it can be a character vector selecting dimension names.
+## FUN - the function to be applied: see ‘Details’. In the case of functions like +, %*%, etc., 
+##       the function name must be backquoted or quoted.
+## ... - optional arguments to FUN.
+
+# 2. Adapt col_summary() so that it only applies to numeric columns.
+#    You might want to start with an is_numeric() function that a logical vector that has a TRUE corresponding to each numeric column.
+## Create a test sample df1
+df1 <- tibble(
+  a = rnorm(10),
+  b = rnorm(10),
+  c = rnorm(10),
+  d = letters[1:10]
+)
+
+col_summary2 <- function(df, fun) {
+  num <- vector("logical", length(df))
+  for (i in seq_along(df)) {
+    num[[i]] <- is.numeric(df[[i]])
+  }
+  out <- vector("double", length(df[num]))
+  for (i in seq_along(df[num])) {
+    names(out) <- names(df[num])
+    out[[i]] <- fun(df[num][[i]])
+  }
+  out
+}
+col_summary2(df1, sum)
+
+# 21.5 The map functions 
+
+# The pattern of looping over a vector, doing something to each element and saving the results 
+# is so common that the purrr package provides a family of functions to do it for you.
+# There is one funciton for each type of output:
+# 1. map() makes a list.
+# 2. map_lgl() makes a logical vector.
+# 3. map_int() makes an integer vector.
+# 4. map_dbl() makes a double vector.
+# 5. map_chr() makes a character vector.
+
+# Each function takes vector as input, applies a function to each piece, and then returns a new vector that's the smae length
+# (and has the smae names) as the input.
+# The type of the vector is determined by the suffix to the map function.
+
+# Once you master these functions, you'll find it takes much less time to slove iteration problems.
+# But you should never feel bad about using a for loop instead of a map function.
+# The map functions are a step up a tower of abstraction, and it can take a long time to get your head around how they work.
+# The important thing is that you solve the problem that you're working on, not write the most concise and elegant code
+# (although that's definitely somthing you want to strive towards!).
+
+# Some people will tell you to avoid for loops because they are slow. They're wrong!
+# (Well at least they're rather out of date, as for loops haven't been slow for many years).
+# The chief benefits of using functions like map() is not speed, but clarity:
+# they make your code easier to write and to read.
+
+# We can use these functions to perform the same computations as the last for loop.
+# Those summmry functions returned doubles, so we need to use map_dbl():
+map_dbl(df, mean)
+map_dbl(df, median)
+map_dbl(df, sd)
+
+# Compared to using a for loop, focus is on the operation being performed (i.e. mean(), median(), sd()),
+# not the bookkeeping required to loop over every element and store teh output.
+# This is even more apparent if we use the pipe:
+df %>% map_dbl(mean)
+df %>% map_dbl(median)
+df %>% map_dbl(sd)
+
+# There are a few different between map_*() and col_summary():
+# 1. All purrr functions are implemented in C. This makes them a little faster at the expense of readability.
+# 2. The second argument, .f, the function to apply, can be a formula, a character vector, or an integer vector.
+#    You'll learn about those handy shortcuts in the next seciton.
+# 3. map_*() uses ... ([dot dot dot]) to pass along additional arguments to .f each time it's called:
+map_dbl(df, mean, trim = 0.5) ## trimed mean in R:(http://f.dataguru.cn/thread-56414-1-1.html)
+# 4. The map functions also preserve names:
+z <- list(x = 1:3, y = 4:5)
+map_int(z, length)
+
+# 21.5.1 Shortcuts
+
+# There are a few shortcuts that you can use with .f in order ro save a little typing.
+# Imagine you want to fit a linear model to each group in a dataset.
+# The following toy example splits the up the mtcars dataset in to three pieces
+# (one for each value of cylinder) and fits the same linear model to each piece:
+models <- mtcars %>% 
+  split(.$cyl) %>% 
+  map(function(df) lm(mpg ~ wt, data = df))
+
+# The syntax for creating an anonymous function in R is quite verbose so purrr provides a convenient shortcut: a one-side formula.
+models <- mtcars %>% 
+  split(.$cyl) %>% 
+  map(~lm(mpg ~ wt, data = .))
+
+# Here I've used . as a pronoun: it refers to the current list element(in the same way that i referred to the current index in the for loop).
+
+# When you're looking at many models, you might want to extract a summary statistic like the R^2.
+# To do that we need to first run summary() and then extract the component called r.squared.
+# We could do that using the shorthand for anonymous functions:
+models %>% 
+  map(summary) %>% 
+  map_dbl(~.$r.squared)
+
+# But extracting named components is a common operation, so purrr provides an even shorter shortcut:
+# you can use a string.
+models %>% 
+  map(summary) %>% 
+  map_dbl("r.squared")
+
+# You can also use an integer to select elements by position:
+x <- list(list(1, 2, 3), list(4, 5, 6), list(7, 8, 9))
+x %>% map_dbl(2)
+
+# 21.5.2 Base R
+
+# If you're familiar with the apply family of functions in base R, you might have noticed some similarities with the purrr functions:
+# 1. lapply() is basically identical to map(), except map() is consistent with all the other functions in purrr,
+#    and you can use the shortcuts for .f.
+# 2. Base sapply() is a wrapper around lapple() that automatically simplifies the output.
+#    This is useful for interacive work but is problematic in a function because you never know what sort of output you'll get:
+x1 <- list(
+  c(0.27, 0.37, 0.57, 0.91, 0.20),
+  c(0.90, 0.94, 0.66, 0.63, 0.06), 
+  c(0.21, 0.18, 0.69, 0.38, 0.77)
+)
+x2 <- list(
+  c(0.50, 0.72, 0.99, 0.38, 0.78), 
+  c(0.93, 0.21, 0.65, 0.13, 0.27), 
+  c(0.39, 0.01, 0.38, 0.87, 0.34)
+)
+
+threshold <- function(x, cutoff = 0.8) x[x > cutoff]
+x1 %>% sapply(threshold) %>% str()
+x2 %>% sapply(threshold) %>% str()
+
+# 3. vapply() is a safe alternative to sapply() because you supply an additional argument that defines the type.
+#    The only problem with vapply() is that it's a lot of typing: vapply(df, is.numeric, logical(1)) is equivalent to map_lgl(df, is.numeric).
+#    One advantage of vapply() over purrr's map functions is that it can also produce matrices - the map functions only ever produce vectors.
+
+# I focus on purrr functions here because they have more consistent names and arguments, helpful shortcuts, 
+# and in the future will provide easy parallelism and progress bars.
+
+# 21.5.3 Exercises
+
+# 1. Write code that uses one of the map functions to:
+#    (1) Compute the mean of every column in mtcars.
+#    (2) Determine the type of each column in nycflights13::flights.
+#    (3) Compute the number of unique values in each column of iris.
+#    (4) Generate 10 random normals for each of µ = -10, 0, 10, and 100.
+mtcars %>% str()
+
+## (1) Compute the mean of every column in mtcars.
+mtcars %>% 
+  map_dbl(mean, na.rm = TRUE)
+apply(mtcars, 2, mean)
+lapply(mtcars, mean) %>% unlist()
+
+## (2) Determine the type of each column in nycflights13::flights.
+nycflights13::flights %>% 
+  map(typeof)
+
+lapply(nycflights13::flights, typeof)
+
+df_summary <- function(df, fun) {
+  out <- vector("character", length(df))
+  names(out) <- names(df)
+  for(i in seq_along(out)) {
+    out[[i]] <- fun(df[[i]])
+  }
+  out
+}
+df_summary(nycflights13::flights, typeof)
+
+microbenchmark::microbenchmark(
+  map_test <- nycflights13::flights %>% map_chr(typeof),
+  lapply_test <- lapply(nycflights13::flights, typeof),
+  for_loop_test <- df_summary(nycflights13::flights, typeof),
+  times = 3
+)
+
+## (3) Compute the number of unique values in each column of iris.
+iris %>% map_int(n_distinct)
+
+iris %>% apply(2, n_distinct)
+
+df_summary(iris, n_distinct)
+
+## (4) Generate 10 random normals for each of µ = -10, 0, 10, and 100.
+c(-10, 0, 10, 100) %>% map(~ rnorm(n = 10, mean = .))
+
+# 2. How can you create a single vector that for each column in a data frame indicates whether or nor it's a factor?
+diamonds %>% map_lgl(is.factor)
+
+# 3. What happens when you use the map functions on vectors that aren't lists?
+#    What does map(1:5, runif) do? Why?
+map(1:5, runif)
+
+## The result looks like the code below, map(1:5, runif) will run runif(1) to runif(5), and the output is a list.
+list(
+  runif(1),
+  runif(2),
+  runif(3),
+  runif(4),
+  runif(5)
+)
+
+# 4. What does map(-2:2, rnorm, n = 5) do? Why? What does map_dbl(-2:2, rnorm, n = 5) do? Why?
+map(-2:2, rnorm, n = 5)
+## This code will create the vector of mean = -2, -1, 0, 1, 2, and 5 observations each vector.
+
+map_dbl(-2:2, rnorm, n = 5)
+## The return value of .f must be of length one for each element of .x.
+
+# 5. Rewrite map(x, function(df) lm(mpg ~ wt, data = df)) to eliminate the anonymous funciton.
+x <- split(mtcars, mtcars$cyl)
+map(x, function(df) lm(mpg ~ wt, data = df))
+
+map(x, ~lm(mpg ~ wt, data = .))
+
+# 21.6 Dealing with failure 
+
+# When you use the map functions to repeat many operations, the chances are much higher that one of those operations will fail.
+# When this happens, you'll get an error message, and no output.
+# This is annoying: why does one failure prevent you from accessing all the other successes?
+# How do you ensure that one bad apple doesn't ruin the whole barrel?
+
+# In this section you'll learn how to deal this situation with a new function: safely().
+# safely() is an adverb: it takes a funciton(a verb) and returns a modified version. 
+# In this case, the modified funciton will never throw an error. Instead, it always returns a list with two elements:
+# 1. result is the original result. If there was an error, this will be NULL.
+# 2. error is an error object. If the operation was successful, this will be NULL.
+
+# (You might be familiar with the try() function in base R. It's similar, 
+# but because it sometimes returns the original result and it sometimes returns an error object it's more difficult to work with.)
+
+# Let's illustrate this a simple example: log():
+safe_log <- safely(log)
+str(safe_log(10))
+safe_log("a")
+
+# When the function succeeds, the result element contains the result and the error element is NULL.
+# When the function fails, the result element is NULL and the error element contains an error object.
+# safely() is designed to work with map:
+x <- list(1, 10, "a")
+y <- x %>% map(safely(log))
+str(y)
+
+# This would be easier to work with if we had two lists: one of all the errors and one of all the output.
+# That's easy to get with purrr::transpose():
+y <- y %>% transpose()
+str(y)
+
+# It's up to you how to deal with the errors, but typically you'll either look at the values of x where y is an error, 
+# or work with the values of y that are ok:
+is_ok <- y$error %>% map_lgl(is_null)
+x[!is_ok]
+
+y$result[is_ok] %>% flatten_dbl()
+
+# Purrr provides two other useful adverbs:
+# 1. Like safely(), possibly() always succeeds. 
+#    It's simpler than safely(), because you give it a default value to return when there is an error.
+x <- list(1, 10, "a")
+x %>% map_dbl(possibly(log, NA_real_))
+
+# 2. quietly() performs a similar role to safely(), but instead of capturing errors, 
+#    it captures printed output, messages, and warnings:
+x <- list(1, -1)
+x %>% map(quietly(log)) %>% str()
+
+
+
+
 
   
