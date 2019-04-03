@@ -2045,9 +2045,9 @@ x <- tibble::tibble(a = 1:5, b = list(letters[1:5]))
 
 # 21.1 Introduction
 
-# In funcitons, we talked about hoe important it is to reduce duplication in your code by creating funcitons instead of copying-and-pasting.
+# In funcitons, we talked about how important it is to reduce duplication in your code by creating funcitons instead of copying-and-pasting.
 # Reducing code duplication has three main benefits:
-# 1. It's easier to the intent of your code, because your eyes are drawn to what's different, not what stays the smae.
+# 1. It's easier to the intent of your code, because your eyes are drawn to what's different, not what stays the same.
 # 2. It's easier to respond to changes in requirements. As your need change, you only need to make changes in one place, 
 #    rather than remembering to change every place that you copied-and-pasted the code.
 # 3. You're likely to have fewer bugs because each line of code is used in more places.
@@ -2060,7 +2060,7 @@ x <- tibble::tibble(a = 1:5, b = list(letters[1:5]))
 # On the imperative side you have tools like for loops and while loops, which are a great place to start because they make iteration very explicit,
 # so it's ovious what's happening.
 # However, for loops are quite verbose, and require quite a bit of bookkeeping code that is duplicated for every for loop.
-# Functional programming(FP) oggers tools to extract out that is duplicated code, so each common for loop pattern gets its own funciton.
+# Functional programming(FP) offers tools to extract out that is duplicated code, so each common for loop pattern gets its own funciton.
 # Once you master the vocabulary of FP, you can solve many common iteration problems with less code, more ease, and fewer errors.
 
 # 21.1.1 Prerequisites
@@ -2093,7 +2093,7 @@ for (i in seq_along(df)) {           # 2. sequence
 output
 
 # Every for loop has three components;
-# 1. The output: output <- vector("double", length(x)). Before you start the loop, you must always allocate sufficient space for the output.s
+# 1. The output: output <- vector("double", length(x)). Before you start the loop, you must always allocate sufficient space for the output.
 #    This is very important for efficiency: if you grow the for loop at each iteration using c() (for example), your for loop will be very slow.
 
 #    A general way of creating an empty vector of given length is the vector() function.
@@ -2102,7 +2102,7 @@ output
 # 2. The sequence: i in seq_along(df). This determines what to loop over: each run of the for loop will assign i to a different value from seq_along(df).
 #    It's useful to think of i as a pronoun, like "it".
 
-#    You might not have seen seq_along() before. it's a safe version of the familiar 1:length(l), with an pmportant diffenence: 
+#    You might not have seen seq_along() before. it's a safe version of the familiar 1:length(l), with an important diffenence: 
 #    if you have a zero-length vector, seq_along() does the right thing: 
 y <- vector("double", 0)
 seq_along(y)
@@ -2116,7 +2116,7 @@ seq_along(y)
 #    The first iteration will run output[[1]] <- median(df[[1]]), the second will run output[[2]] <- median(df[[2]]), and so on.
 
 # That's all there is to the for loop! Now is a good time to practice creating some besic(and not so basic) for using the exercises below.
-# Then we'll move on some vauations of the for loop that hlep you solve other problems that will crop up in practice.
+# Then we'll move on some variations of the for loop that help you solve other problems that will crop up in practice.
 
 # 21.2.1 Exercises
 
@@ -2275,14 +2275,14 @@ microbenchmark::microbenchmark(
 
 # 21.3 For loop variations 
 
-# Once you have the basic for loop under yuor belt, there are some variations that you should be aware of.
+# Once you have the basic for loop under your belt, there are some variations that you should be aware of.
 # These variations are important regardless of how you do iteration, 
-# so don't forget about them once you've mastered the FP techniques you'll learn about in the nect section.
+# so don't forget about them once you've mastered the FP techniques you'll learn about in the next section.
 
 # There are four variations on the basic theme of the for loop:
-# 1. Modifying a n existing object, instead of creating a new object.
+# 1. Modifying an existing object, instead of creating a new object.
 # 2. Looping over names or values, instead of indices.
-# 3. Handing outputs of unknown length.
+# 3. Handling outputs of unknown length.
 # 4. Handling sequences of unknown length.
 
 # 21.3.1 Modifying an existing object
@@ -2305,7 +2305,7 @@ df$b <- rescale01(df$b)
 df$c <- rescale01(df$c)
 df$d <- rescale01(df$d)
 
-# To solve this with a for loop we again think about the three comonents:
+# To solve this with a for loop we again think about the three components:
 # 1. Output: we already have the output - it's the same as the input!
 # 2. Sequence: we can think about a data frame as a list of columns, so we can iterate over each column with seq_along(df).
 # 3. Body: apply rescale01()
@@ -2365,7 +2365,7 @@ str(out)
 str(unlist(out))
 
 # Have I've used unlist() to flatten a list of vectors into a single vector.
-# A stricter option is to use purrr::flatten_dbl() - it will throw an errro if the input isn't a list of doubles.
+# A stricter option is to use purrr::flatten_dbl() - it will throw an error if the input isn't a list of doubles.
 # This pattern occurs in other places too:
 # 1. You might be generating a long string. Instead of paste()ing together each iteration with the previous,
 #    save the output in a character vector and then combine that vector into a single string with paste(output, collapse = ").
@@ -2870,8 +2870,311 @@ x %>% map_dbl(possibly(log, NA_real_))
 x <- list(1, -1)
 x %>% map(quietly(log)) %>% str()
 
+# 21.7 Mapping over multiple arguments
 
+# So far we've mapped along a single input. But often you have multiple related inputs that you need iterate along in parallel.
+# That's the job of the map2() and pmap() functions.
+# For example, imagine you want to wimulate some random normals with different means.
+# You know how to do that with map():
+mu <- list(5, 10, -3)
+mu %>% 
+  map(rnorm, n = 5) %>% 
+  str()
 
+# What if you also want to vary the standard deviation? 
+# One way to do that would be to iterate over the indices and index into vectors of means and sds:
+sigma <- list(1, 5, 10)
+seq_along(mu) %>% 
+  map(~rnorm(5, mu[[.]], sigma[[.]])) %>% 
+  str()
 
+# But that obfuscates the intent of the code. Instead we could use map2() which iterates over two vectors in parallel:
+map2(mu, sigma, rnorm, n = 5) %>% str()
+
+# map2() generates this series of function calls:
+#     mu        sigma     map2(mu, sigma, rnorm, n = 5)
+# /-------\   /-------\   /--------------------------\
+# | |---| |   | |---| |   | |----------------------| |
+# | | 5 | |   | | 1 | |   | | rnorm(5, 1, n = 5)   | |
+# | |---| |   | |---| |   | |----------------------| |
+# |       |   |       |   |                          |
+# | |---| |   | |---| |   | |----------------------| |
+# | |10 | |   | | 5 | |   | | rnorm(10, 5, n = 5)  | |
+# | |---| |   | |---| |   | |----------------------| |
+# |       |   |       |   |                          |
+# | |---| |   | |---| |   | |----------------------| |
+# | |-3 | |   | |10 | |   | | rnorm(-3, 10, n = 5) | |
+# | |---| |   | |---| |   | |----------------------| |
+# \-------/   \-------/   \--------------------------/
+
+# Note that the arguments that vary for each call come before the function; arguments that are the same for every call come after.
+
+# Like map(), map2() is just a wrapper around a for loop:
+map2 <- function(x, y, f, ...) {
+  out <- vector("list", length(x))
+  for (i in seq_along(x)) {
+    out[[i]] <- f(x[[i]], y[[i]])
+  }
+  out
+}
+map2
+
+# You can also imagine map3(), map4(), map5(), map6() etc, but that would get tedious quickly.
+# Instead, purrr provides pmap() which takes a list of argumnts.
+# You might use that if you wanted to vary the mean, starndard deviation, and number of samples:
+n <- list(1, 3, 5)
+args1 <- list(n, mu, sigma)
+args1 %>% 
+  pmap(rnorm) %>% 
+  str()
+
+# That looks like:
+#                 args1                        pmap(args1)
+# /---------------------------------\  
+# | /-------\  /-------\  /-------\ |   /----------------------\
+# | | |---| |  | |---| |  | |---| | |   | |------------------| |
+# | | | 1 | |  | | 5 | |  | | 1 | | |   | | rnorm(1, 5, 1)   | |
+# | | |---| |  | |---| |  | |---| | |   | |------------------| |
+# | |       |  |       |  |       | |   |                      |
+# | | |---| |  | |---| |  | |---| | |   | |------------------| |
+# | | | 3 | |  | |10 | |  | | 5 | | |   | | rnorm(3, 10, 5)  | |
+# | | |---| |  | |---| |  | |---| | |   | |------------------| |
+# | |       |  |       |  |       | |   |                      |
+# | | |---| |  | |---| |  | |---| | |   | |------------------| |
+# | | | 5 | |  | |-3 | |  | |10 | | |   | | rnorm(5, -3, 10) | |
+# | | |---| |  | |---| |  | |---| | |   | |------------------| |
+# | \-------/  \-------/  \-------/ |   \----------------------/
+# \---------------------------------/
+
+# If you don't name the elements of list, pmap() will use postional matching when calling the function.
+# That's a little fragile, and makes the code harder to read, so it's better to name the arguments:
+args2 <- list(mean = mu, sd = sigma, n = n)
+args2 %>% 
+  pmap(rnorm) %>% 
+  str()
+
+# That's generates longer, but safer, calls:
+#                 args2                                pmap(args2)
+# /---------------------------------\  
+# | /-------\  /-------\  /-------\ | 
+# | |  mu   |  | sigma |  |   n   | |   /-----------------------------------------\
+# | | |---| |  | |---| |  | |---| | |   | |-------------------------------------| |
+# | | | 1 | |  | | 5 | |  | | 1 | | |   | | rnorm(mean = 5, sigma = 1, n = 1)   | |
+# | | |---| |  | |---| |  | |---| | |   | |-------------------------------------| |
+# | |       |  |       |  |       | |   |                                         |
+# | | |---| |  | |---| |  | |---| | |   | |-------------------------------------| |
+# | | | 3 | |  | |10 | |  | | 5 | | |   | | rnorm(mean = 10, sigma = 5, n = 3)  | |
+# | | |---| |  | |---| |  | |---| | |   | |-------------------------------------| |
+# | |       |  |       |  |       | |   |                                         |
+# | | |---| |  | |---| |  | |---| | |   | |-------------------------------------| |
+# | | | 5 | |  | |-3 | |  | |10 | | |   | | rnorm(mean = -3, sigma = 10, n = 5) | |
+# | | |---| |  | |---| |  | |---| | |   | |-------------------------------------| |
+# | \-------/  \-------/  \-------/ |   \-----------------------------------------/
+# \---------------------------------/
+
+# Since the arguments are all the same length, it makes sense to srore them in a data frame:
+params <- tribble(
+  ~mean, ~sd, ~n,
+      5,   1,   1,
+     10,   5,   3,
+     -3,  10,   5
+)
+
+params %>% 
+  pmap(rnorm)
+# As soon as your code gets complicated, I think a data frame is a good approach 
+# because it ensures that each column has a name and is the same length as all the other columns.
+
+# 21.7.1 Invoking different functions
+
+# There's one more step up in complecity - as well as varying the arguments to the function you might also vary the function itself:
+f <- c("runif", "rnorm", "rpois")
+params <- list(
+  list(min = -1, max = 1), 
+  list(sd = 5), 
+  list(lambda = 10)
+)
+
+# To handle this case, you can use invoke_map():
+invoke_map(f, params, n = 5) %>% str()
+
+#        f                params            invoke_map(f, params, n = 5)
+# /-------------\  /-----------------\  /------------------------------------\
+# |             |  | /-------------\ | |                                     |
+# |             |  | |  min   max  | | |                                     |
+# | |---------| |  | | |---| |---| | | | |---------------------------------| |
+# | | "runif" | |  | | |-1 | | 1 | | | | | runif(min = -1, max = 1, n = 5) | |
+# | |---------| |  | | |---| |---| | | | |---------------------------------| |
+# |             |  | \-------------/ | |                                     |
+# |             |  |                 | |                                     |
+# |             |  |   /---------\   | |                                     |
+# |             |  |   |    sd   |   | |                                     |
+# | |---------| |  |   |  |---|  |   | | |---------------------------------| |
+# | | "rnorm" | |  |   |  | 5 |  |   | | | rnorm(sd = 5, n = 5)            | |
+# | |---------| |  |   |  |---|  |   | | |---------------------------------| |
+# |             |  |   \---------/   | |                                     |
+# |             |  |                 | |                                     |
+# |             |  |   /---------\   | |                                     |
+# |             |  |   |  lambda |   | |                                     |
+# | |---------| |  |   |  |---|  |   | | |---------------------------------| |
+# | | "rpois" | |  |   |  |10 |  |   | | | rpois(lambda = 10, n = 5)       | |
+# | |---------| |  |   |  |---|  |   | | |---------------------------------| |
+# \-------------/  |   \---------/   | |                                     |
+#                  \-----------------/ \-------------------------------------/
+
+# The first argument is a list of functions or character vector of function naems.
+# The second argument is a list of lists giving the arguments that vary for each function.
+# The subsequent arguments are passed on to every function.
+
+# And again, you can use tribble() to make creating these matching pairs a little easier:
+sim <- tribble(
+  ~f,      ~params,
+  "runif", list(min = -1, max = 1),
+  "rnorm", list(sd = 5),
+  "rpois", list(lambda = 10)
+)
+sim %>% 
+  mutate(sim = invoke_map(f, params, n = 10))
+
+# 21.8 Walk
+
+# Walk is an alternative to map that use when you want to call a function for its side effects, rather than for its return value. 
+# You typically do this because you want to render output to the screen or save files to disk - 
+# the important thing is the action, not the return value. Here's a very simple example:
+x <- list(1, "a", 3)
+x %>% 
+  walk(print)
+
+# Walk() is generally not that useful compared to walk2() or pwalk().
+# For example, if you had a list of plots and a vector of file names, 
+# you could use pwalk() to save each file to the corresponding location on disk:
+library(ggplot2)
+plots <- mtcars %>% 
+  split(.$cyl) %>% 
+  map(~ggplot(., aes(mpg, wt)) + geom_point())
+paths <- stringr::str_c(names(plots), ".pdf")
+
+pwalk(list(paths, plots), ggsave, path = tempdir())
+
+# walk(), walk2(), pwalk() all invisibly return .x, the first argument.
+# This makes them suitable for use in the middle of pipelines.
+
+# 21.9 Other 
+
+# Purrr provides a number of other funcitons that abstract over types of for loops.
+# You'll use them less frequently than the map functions, but they're useful to know about.
+# The goal here is to briefly illustrate each function, so hopefully it will come to mind if you see a similar problem in the future.
+# Then you can go look up the documentation for more details.
+
+# 21.9.1 Predicate functions
+
+# A number of funtions work with predicate functions that return either a single TRUE or FALSE.
+
+# keep() and discard() keep elements of the input where the predicate is TRUE or FALSE respectively:
+iris %>% 
+  keep(is.factor) %>% 
+  str()
+
+iris %>% 
+  discard(is.factor) %>% 
+  str()
+
+# some() and every() determine if the predicate is true for any or for all of the elements.
+x <- list(1:5, letters, list(10))
+
+x %>% some(is_character)
+
+x %>% every(is_vector)
+
+# detect() finds the first element where the predicate is true; detect_index() returns its position.
+x <- sample(10)
+x
+
+x %>% detect(~ . > 5)
+x %>% detect_index(~ . > 5)
+
+# head_while() and tail_while() take elements from the start or end of a vector while a predicate is true:
+x %>% head_while(~ . > 5)
+x %>% tail_while(~ . > 5)
+
+# 21.9.2 Reduce and accumulate
+
+# Sometimes you have a complex list that you want to reduce to a simple list by repeatedly applying a funciton that reduces a pair to a singleton.
+# This is useful if you want to apply a two-table dplyr verb to multiple tables.
+# For example, you might have a list of data frames, and you want to reduce to a single data frame by joining the elements together:
+dfs <- list(
+  age = tibble(name = "John", age = 30),
+  sex = tibble(name = c("John", "Mary"), sex = c("M", "F")),
+  trt = tibble(name = "Mary", treatment = "A")
+)
+dfs %>% reduce(full_join)
+
+# Or maybe you have a list of vectors, and want to find to intersection:
+vs <- list(
+  c(1, 3, 5, 6 ,10),
+  c(1, 2, 3, 7, 8, 10),
+  c(1, 2, 3, 4, 8, 9, 10)
+)
+
+vs %>% reduce(intersect)
+
+# The reduce function takes a "binary" function (i.e. a function with two primary inputs),
+# and applies it repeatedly to list until there is only a single element left.
+
+# Accumulate is similar but it keeps all the interim results. You could use it to implement a cumulative sum:
+x <- sample(10)
+x
+
+x %>% accumulate(`+`)
+
+# 21.9.3 Exercises
+# 1. Implement your own version of every() using a for loop. Compare it with purrr::every().
+#    What does purrr's version do that your version doesn't?
+every_test <- function(x, f, ...) {
+  out <- vector("double", length(x))
+  for (i in seq_along(x)) {
+    out[[i]] <- f(x[[i]])
+  }
+  all(out == TRUE)
+}
+every_test(x, is.vector)
+every_test(1:3, function(x) x > 0)
+
+?purrr::every()
+
+# 2. Create an enhanced col_summary() that applies a summary function to every numeric column in a data frame.
+nycflights13::flights %>% str()
+
+col_summary3 <- function(df, f, ...) {
+  output <- map(keep(df, is.numeric), f)
+  output
+}
+col_summary3(iris, mean)
+
+# 3. A possible base R equivalent of col_summary() is:
+col_sum3 <- function(df, f) {
+  is_num <- sapply(df, is.numeric)
+  df_num <- df[, is_num]
+  
+  sapply(df_num, f)
+}
+#    But it has a number of bugs as illustrated with the following inputs:
+df <- tibble(
+  x = 1:3, 
+  y = 3:1,
+  z = c("a", "b", "c")
+)
+# ok
+col_sum3(df, mean)
+# Has problems: don't always return numeric vector
+col_sum3(df[1:2], mean)
+col_sum3(df[1], mean)
+col_sum3(df[0], mean)
+
+# What causes the bugs?
+?sapply()
+## sapply is a user-friendly version and wrapper of lapply by default returning a vector, matrix or,
+## if simplify = "array", an array if appropriate, by applying simplify2array(). sapply(x, f, simplify = FALSE, 
+## USE.NAMES = FALSE) is the same as lapply(x, f).
 
   
