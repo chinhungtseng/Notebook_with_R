@@ -2412,7 +2412,7 @@ while (nheads < 3) {
 flips
 
 # I mention while loops only briefly, because I hardly ever use them.
-# they're most often used for sumulation, which is outside the scope of this book.
+# they're most often used for simulation, which is outside the scope of this book.
 # However, it is good to know they exist so that you're prepared for problems where the number of iterations is not know in advance.
 
 # 21.3.5 Exercises
@@ -2504,7 +2504,7 @@ for (var in names(trans)) {
 # For loops are not as important in R as they are in other languages because R is a functional programming language.
 # This means that it's possible to wrap up for loops in a function, and call that function instead of using the for loop directly.
   
-# To see why this is important, condider(again) this simple data frmae:
+# To see why this is important, consider(again) this simple data frame:
 df <- tibble(
   a = rnorm(10),
   b = rnorm(10),
@@ -2519,7 +2519,7 @@ for (i in seq_along(df)) {
 }
 output
 
-# You realise that you're goning to want to compute the means of every column pretty frequently, 
+# You realise that you're going to want to compute the means of every column pretty frequently, 
 # so you extract it into a function:
 col_mean <- function(df) {
   output <- vector("double", length(df))
@@ -2529,7 +2529,7 @@ col_mean <- function(df) {
   output
 }
 
-# But then you think it'd also be helpful to be able to compute the median, and the standard deviation, 
+# But then you think it's also be helpful to be able to compute the median, and the standard deviation, 
 # so you copy and paste your col_mean() function and replace the mean() with median() and sd():
 col_median <- function(df) {
   output <- vector("double", length(df))
@@ -2575,7 +2575,7 @@ col_summary(df, median)
 
 # The idea of passing a function to another function is extremely powerful idea, 
 # and it's one of the behavours that makes R a functional programming language.
-# It might take you a while to wrap your head around the idea, but it's worth th investment.
+# It might take you a while to wrap your head around the idea, but it's worth to investment.
 # In the rest of the chapter, you'll learn about and use the purrr package, 
 # which provides functions that eliminate the need for many common for loops.
 # The apply family of functions in base R (apply(), lapply(), tapply(), etc) solve a similar problem,
@@ -2630,6 +2630,17 @@ col_summary2 <- function(df, fun) {
 }
 col_summary2(df1, sum)
 
+## rewrite the col_summary2():
+col_summary2 <- function(df, f) {
+  is_num <- df[, map_lgl(df, is.numeric)]
+  output <- vector("double", length(is_num))
+  for (i in seq_along(is_num)) {
+    output[[i]] <- f(is_num[[i]])
+  }
+  output
+}
+col_summary2(iris, mean)
+
 # 21.5 The map functions 
 
 # The pattern of looping over a vector, doing something to each element and saving the results 
@@ -2641,8 +2652,8 @@ col_summary2(df1, sum)
 # 4. map_dbl() makes a double vector.
 # 5. map_chr() makes a character vector.
 
-# Each function takes vector as input, applies a function to each piece, and then returns a new vector that's the smae length
-# (and has the smae names) as the input.
+# Each function takes vector as input, applies a function to each piece, and then returns a new vector that's the same length
+# (and has the same names) as the input.
 # The type of the vector is determined by the suffix to the map function.
 
 # Once you master these functions, you'll find it takes much less time to slove iteration problems.
@@ -2663,7 +2674,7 @@ map_dbl(df, median)
 map_dbl(df, sd)
 
 # Compared to using a for loop, focus is on the operation being performed (i.e. mean(), median(), sd()),
-# not the bookkeeping required to loop over every element and store teh output.
+# not the bookkeeping required to loop over every element and store the output.
 # This is even more apparent if we use the pipe:
 df %>% map_dbl(mean)
 df %>% map_dbl(median)
@@ -2681,9 +2692,9 @@ map_int(z, length)
 
 # 21.5.1 Shortcuts
 
-# There are a few shortcuts that you can use with .f in order ro save a little typing.
+# There are a few shortcuts that you can use with .f in order to save a little typing.
 # Imagine you want to fit a linear model to each group in a dataset.
-# The following toy example splits the up the mtcars dataset in to three pieces
+# The following toy example splits the up the mtcars dataset into three pieces
 # (one for each value of cylinder) and fits the same linear model to each piece:
 models <- mtcars %>% 
   split(.$cyl) %>% 
@@ -2694,9 +2705,9 @@ models <- mtcars %>%
   split(.$cyl) %>% 
   map(~lm(mpg ~ wt, data = .))
 
-# Here I've used . as a pronoun: it refers to the current list element(in the same way that i referred to the current index in the for loop).
+# Here I've used . as a pronoun: it refers to the current list element(in the same way that I referred to the current index in the for loop).
 
-# When you're looking at many models, you might want to extract a summary statistic like the R^2.
+# When you're looking at many models, you might want to extract a summary statistic like the R^2 (R Squared).
 # To do that we need to first run summary() and then extract the component called r.squared.
 # We could do that using the shorthand for anonymous functions:
 models %>% 
@@ -2718,7 +2729,7 @@ x %>% map_dbl(2)
 # If you're familiar with the apply family of functions in base R, you might have noticed some similarities with the purrr functions:
 # 1. lapply() is basically identical to map(), except map() is consistent with all the other functions in purrr,
 #    and you can use the shortcuts for .f.
-# 2. Base sapply() is a wrapper around lapple() that automatically simplifies the output.
+# 2. Base sapply() is a wrapper around lapply() that automatically simplifies the output.
 #    This is useful for interacive work but is problematic in a function because you never know what sort of output you'll get:
 x1 <- list(
   c(0.27, 0.37, 0.57, 0.91, 0.20),
@@ -2790,7 +2801,7 @@ df_summary(iris, n_distinct)
 ## (4) Generate 10 random normals for each of µ = -10, 0, 10, and 100.
 c(-10, 0, 10, 100) %>% map(~ rnorm(n = 10, mean = .))
 
-# 2. How can you create a single vector that for each column in a data frame indicates whether or nor it's a factor?
+# 2. How can you create a single vector that for each column in a data frame indicates whether or not it's a factor?
 diamonds %>% map_lgl(is.factor)
 
 # 3. What happens when you use the map functions on vectors that aren't lists?
@@ -2874,7 +2885,7 @@ x %>% map(quietly(log)) %>% str()
 
 # So far we've mapped along a single input. But often you have multiple related inputs that you need iterate along in parallel.
 # That's the job of the map2() and pmap() functions.
-# For example, imagine you want to wimulate some random normals with different means.
+# For example, imagine you want to simulate some random normals with different means.
 # You know how to do that with map():
 mu <- list(5, 10, -3)
 mu %>% 
@@ -2909,7 +2920,7 @@ map2(mu, sigma, rnorm, n = 5) %>% str()
 
 # Note that the arguments that vary for each call come before the function; arguments that are the same for every call come after.
 
-# Like map(), map2() is just a wrapper around a for loop:
+# Like map(), map2() is just a wrapper ardound a for loop:
 map2 <- function(x, y, f, ...) {
   out <- vector("list", length(x))
   for (i in seq_along(x)) {
@@ -2920,6 +2931,15 @@ map2 <- function(x, y, f, ...) {
 map2
 
 # You can also imagine map3(), map4(), map5(), map6() etc, but that would get tedious quickly.
+map3 <- function(x, y, z, f, ...) {
+  out <- vector("list", length(x))
+  for (i in seq_along(x)) {
+    out[[i]] <- f(x[[i]], y[[i]], z[[i]])
+  }
+  out
+}
+map3(n, mu, sigma, rnorm)
+
 # Instead, purrr provides pmap() which takes a list of argumnts.
 # You might use that if you wanted to vary the mean, starndard deviation, and number of samples:
 n <- list(1, 3, 5)
@@ -2998,31 +3018,31 @@ params <- list(
 # To handle this case, you can use invoke_map():
 invoke_map(f, params, n = 5) %>% str()
 
-#        f                params            invoke_map(f, params, n = 5)
-# /-------------\  /-----------------\  /------------------------------------\
-# |             |  | /-------------\ | |                                     |
-# |             |  | |  min   max  | | |                                     |
-# | |---------| |  | | |---| |---| | | | |---------------------------------| |
-# | | "runif" | |  | | |-1 | | 1 | | | | | runif(min = -1, max = 1, n = 5) | |
-# | |---------| |  | | |---| |---| | | | |---------------------------------| |
-# |             |  | \-------------/ | |                                     |
-# |             |  |                 | |                                     |
-# |             |  |   /---------\   | |                                     |
-# |             |  |   |    sd   |   | |                                     |
-# | |---------| |  |   |  |---|  |   | | |---------------------------------| |
-# | | "rnorm" | |  |   |  | 5 |  |   | | | rnorm(sd = 5, n = 5)            | |
-# | |---------| |  |   |  |---|  |   | | |---------------------------------| |
-# |             |  |   \---------/   | |                                     |
-# |             |  |                 | |                                     |
-# |             |  |   /---------\   | |                                     |
-# |             |  |   |  lambda |   | |                                     |
-# | |---------| |  |   |  |---|  |   | | |---------------------------------| |
-# | | "rpois" | |  |   |  |10 |  |   | | | rpois(lambda = 10, n = 5)       | |
-# | |---------| |  |   |  |---|  |   | | |---------------------------------| |
-# \-------------/  |   \---------/   | |                                     |
-#                  \-----------------/ \-------------------------------------/
+#        f                params              invoke_map(f, params, n = 5)
+# /-------------\  /-----------------\   /------------------------------------\
+# |             |  | /-------------\ |  |                                     |
+# |             |  | |  min   max  | |  |                                     |
+# | |---------| |  | | |---| |---| | |  | |---------------------------------| |
+# | | "runif" | |  | | |-1 | | 1 | | |  | | runif(min = -1, max = 1, n = 5) | |
+# | |---------| |  | | |---| |---| | |  | |---------------------------------| |
+# |             |  | \-------------/ |  |                                     |
+# |             |  |                 |  |                                     |
+# |             |  |   /---------\   |  |                                     |
+# |             |  |   |    sd   |   |  |                                     |
+# | |---------| |  |   |  |---|  |   |  | |---------------------------------| |
+# | | "rnorm" | |  |   |  | 5 |  |   |  | | rnorm(sd = 5, n = 5)            | |
+# | |---------| |  |   |  |---|  |   |  | |---------------------------------| |
+# |             |  |   \---------/   |  |                                     |
+# |             |  |                 |  |                                     |
+# |             |  |   /---------\   |  |                                     |
+# |             |  |   |  lambda |   |  |                                     |
+# | |---------| |  |   |  |---|  |   |  | |---------------------------------| |
+# | | "rpois" | |  |   |  |10 |  |   |  | | rpois(lambda = 10, n = 5)       | |
+# | |---------| |  |   |  |---|  |   |  | |---------------------------------| |
+# \-------------/  |   \---------/   |  |                                     |
+#                  \-----------------/  \-------------------------------------/
 
-# The first argument is a list of functions or character vector of function naems.
+# The first argument is a list of functions or character vector of function names.
 # The second argument is a list of lists giving the arguments that vary for each function.
 # The subsequent arguments are passed on to every function.
 
