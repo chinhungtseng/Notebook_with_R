@@ -3,8 +3,8 @@
 # 22 Introduction
 
 # Now that you are equipped with powerful programming tools we can finally return to modeling.
-# You'll use your new tools of data wrangling and programming, to fit many nmodels and understand how they work.
-# The focus of this book is on ecploration, not confirmation or formal inference.
+# You'll use your new tools of data wrangling and programming, to fit many models and understand how they work.
+# The focus of this book is on exploration, not confirmation or formal inference.
 # But you'll learn a few basic tools that help you understand the variation within your models.
 
 #  /-----------------------------------------------------------------\
@@ -29,11 +29,11 @@
 # (These two categories of models are sometimes calles supervised and unsupervised, but I don't think that terminology is particularly illuminating.)
 
 # This book is not going to give you a deep understanding of the mathematical theory that underlies models.
-# It will, however, build your intuition about how statistical models work, and give you a familyof useful tools 
+# It will, however, build your intuition about how statistical models work, and give you a family of useful tools 
 # that allow you to use models to better understand your data:
-# 1. In model basics, you'll how models work mechanistically, focussing on the important family of linear models.
+# 1. In model basics, you'll learn how models work mechanistically, focussing on the important family of linear models.
 #    You'll learn general tools for gaining insight into what a predictive model tells you about your data, 
-#    focussing on simple sumulated datasets. (https://r4ds.had.co.nz/model-basics.html#model-basics)
+#    focussing on simple simulated datasets. (https://r4ds.had.co.nz/model-basics.html#model-basics)
 # 2. In model building, you'll learn how to use models to pull out known patterns in real data.
 #    Once you have recognised an important pattern it's useful to make it explicit in a model, 
 #    because then you can more easily see the subtler signals that remain. (https://r4ds.had.co.nz/model-building.html#model-building)
@@ -49,12 +49,12 @@
 
 # 22.1 Hypothesis generation vs. hypothesis confirmation
 
-# In this book, we are going to use moedls as a tool for exploration, completing the trifecta of the tools for EDA that were introduced in Part 1.
+# In this book, we are going to use models as a tool for exploration, completing the trifecta of the tools for EDA that were introduced in Part 1.
 # This is not how models are usually taught, but as you will see, models are an important tool for exploration.
 # Traditionally, the focus of modelling is on inference, or for confirming that an hypothesis is true.
 # Doing this correctly is not complicated, but it is hard.
 # There is a pair of ideas that you must understand in order to do inference correctly:
-# 1. Each obsevation can either be used for exploration or confirmation, not both.
+# 1. Each observation can either be used for exploration or confirmation, not both.
 # 2. You can use an observation as many times as you like for exploration, but you can only use it once for confirmation.
 #    AS soon as you use an observation twice, you've switched from confirmation to exploration.
 
@@ -63,11 +63,11 @@
 # but you should never sell an exploratory analysis as a confirmatory analysis because it is fundamentally misleading.
 
 # If you are serious about doing an confirmatory analysis, one approach is to split your data into three pieces befor you begin the analysis:
-# 1. 60% fo your data goes into a training (or exploration) set.
+# 1. 60% of your data goes into a training (or exploration) set.
 #    You're allowed to do anything you like with this data: visualise it and fit tons of models to it.
 # 2. 20% goes into a query set. You can use this data to compare models or visualisations by hand, 
 #    but you're not allowed to use it as part of an automated process.
-# 3. 20% is held bach for a test set. You can oly use this data ONCE, to test your final model.
+# 3. 20% is held back for a test set. You can oly use this data ONCE, to test your final model.
 
 # This partitioning allows you to explore the training data, occasionally generating candidate hypotheses that you check with the query set.
 # When you are confident you have the right model, you can check it once with the test data.
@@ -86,8 +86,8 @@
 # Strong patterns will hide subtler trends, so we'll use models to help peel back layers of structure as we explore a dataset.
 
 # However, before we can start using models on interesting, real, datasets, you need to understand the basics of how models work.
-# For that reason, this chapter of the book is unque because it uses only sumulated datasets.
-# These datasets are very simple, and not at all interesting, but they will help you understand the essence of modeling 
+# For that reason, this chapter of the book is unique because it uses only simulated datasets.
+# These datasets are very simple, and not at all interesting, but they will help you understand the essence of modelling 
 # before you apply the same techniques to real data in the next chapter.
 
 # There are two parts to a model:
@@ -95,11 +95,11 @@
 #    For example, the pattern might be a straight line, or a quadratic curve.
 #    You will express the model family as an equation like y = a_1 * x + a_2 or y = a_1 * x ^ a_2.
 #    Here, x and y are known variables from your data, and a_1 and a_2 are parameters that can vary to capture different patterns.
-# 2. Next, you generate a fitted model by finding th model from the family that is the closest to your data.
+# 2. Next, you generate a fitted model by finding the model from the family that is the closest to your data.
 #    This takes the generic model family and makes it specific, like y = 3 * x + 7 or y = 9 * x ^ 2.
 
 # It's important to understand that a fitted model is just the closest model from a family of models.
-# That implies that you have the "best" model(according to some criteria); 
+# That implies that you have the "best" model (according to some criteria); 
 # it doesn't imply that you have a good model and it certainly doesn't imply that the model is "true".
 # George Box puts this well in his famous aphorism.
 
@@ -139,7 +139,7 @@ ggplot(sim1, aes(x, y)) +
 # You can see a strong pattern in the data. Let's use a model to capture that pattern and make it explicit.
 # It's our job to supply the basic form of the model. In this case, the relationship looks linear, i.e. y = a_0 + a_1 * x.
 # Let's start by getting a feel for what models from that family look like by randomly generating a few and overlaying them on the data.
-# For this simple case, we can use geom_abline() which takes a slopt and intercept as parameters.
+# For this simple case, we can use geom_abline() which takes a slope and intercept as parameters.
 # Later on we'll learn more general techniques that work with any model.
 models <- tibble(
   a1 = runif(250, -20, 40),
@@ -158,11 +158,23 @@ ggplot(sim1, aes(x, y)) +
 # One easy place to start is to find the vertical distance between each point and the model, as in the following diagram.
 # (Note that I've shifted the x values slightly so you can see the individual distance.)
 
+# |                / o
+# |           o  /|
+# |            /  |
+# |      o   /|   |
+# |      | /  o   o
+# |  o   /o
+# |  |o/    
+# |  /      
+# |/ o
+# |
+# |_________________________________
+
 # This distance is just the difference between the y value given by the model (the prediction), 
 # and the actual y value in the data (the response).
 
 # To compute this distance, we first turn our model family into an R function.
-# This takes the model parameters and the data as inputs, and givees values predicted by the model as output:
+# This takes the model parameters and the data as inputs, and gives values predicted by the model as output:
 model1 <- function(a, data) {
   a[1] + data$x * a[2]
 }
@@ -181,6 +193,194 @@ measure_distance <- function(mod, data) {
 }
 measure_distance(c(7, 1.5), sim1)
 
+# Now we can use purrr to compute the distance for all the models defined above.
+# We need a helper function because our distance function expects the model as a numeric vector of length 2.
+sim1_dist <- function(a1, a2) {
+  measure_distance(c(a1, a2), sim1)
+}
+
+models <- models %>% 
+  mutate(dist = purrr::map2_dbl(a1, a2, sim1_dist))
+models
+
+# Next, let's overlay the 10 best models on to the data. I've coloured the models by -dist:
+# this is an easy way to make sure that the best models (i.e. the ones with the smallest distance) get the brighest colours.
+ggplot(sim1, aes(x, y)) + 
+  geom_point(size = 2, colour = "grey30") +
+  geom_abline(
+    aes(intercept = a1, slope = a2, colour = -dist),
+    data = filter(models, rank(dist) <= 10)
+  )
+
+# We can also think about these models as observations, and visualising with a scatterplot of a1 vs a2, again coloured by -dist.
+# We can no longer directly see how the model compares to the data, but we can see many models at once.
+# Again, I've highlighted the 10 best models, this time by drawing red circles underneath them.
+ggplot(models, aes(a1, a2)) + 
+  geom_point(data = filter(models, rank(dist) <= 10), size = 4, colour = "red") + 
+  geom_point(aes(colour = -dist))
+
+# Instead of trying lots of random models, we could be more systematic and generate an evenly spaced grid of points (this is called a grid search).
+# I picked the parameters of the grid roughly by looking at where the best models were in the plot above.
+grid <- expand.grid(
+  a1 = seq(-5, 20, length = 25),
+  a2 = seq(1, 3, length = 25)
+  ) %>% 
+  mutate(dist = purrr::map2_dbl(a1, a2, sim1_dist))
+
+grid %>% 
+  ggplot(aes(a1, a2)) + 
+  geom_point(data = filter(grid, rank(dist) <= 10), size = 4, colour = "red") + 
+  geom_point(aes(colour = -dist))
+
+# When you overlay the best 10 models back on the original data, they all look pretty good:
+ggplot(sim1, aes(x, y)) +
+  geom_point(size = 2, colour = "grey30") +
+  geom_abline(
+    aes(intercept = a1, slope = a2, colour = -dist),
+    data = filter(grid, rank(dist) <= 10)
+  )
+
+# You could imagine iteratively making the grid finer and finer until you narrowed in on the best model.
+# But there's a better way to tackle that problem: a numerical minimisation tool called Newton-Raphson search.
+# The intuition of Newton-Raphson is pretty simple: you pick a starting point and look around for the steepest slope.
+# You then ski down that slope a little way, and then repeat again and again, until you can't go any lower.
+# In R, we can do that with optim():
+best <- optim(c(0,0), measure_distance, data = sim1)
+best$par
+
+ggplot(sim1, aes(x, y)) + 
+  geom_point(size = 2, colour = "grey30") + 
+  geom_abline(intercept = best$par[1], slope = best$par[2])
+
+# Don't worry too much about the details of how optim() works. It's the intuition that's important here.
+# If you have a function that defines the distance between a model and a dataset, 
+# an algorithm that can minimise that distance by modifying the paraeters of the model, you can find the best model.
+# The neat thing about this approach is that it will work for any family of models that you can write an equation for.
+
+# There's one more approach that we can use for this model, because it's a special case of a broader family: linear models.
+# A linear model has the general form y = a_1 + a_2 * x_1 + a_3 * x_2 + ... + a_n * x_(n -1).
+# So this simple model is equivalent to a general linear model where n is 2 and x_1 is x.
+# R has a tool specifically designed for fitting linear models called lm().
+# lm() has a special way to specify the model family: formulas.
+# Formulas look like y ~ x, which lm() will translate to a function like y = a_1 + a_2 * x.
+# We can fit the model and look at the output:
+sim1_mod <- lm(y ~ x, data = sim1)
+coef(sim1_mod)
+
+# These are exactly the same values we got with optim()! 
+# Behind the scenes lm() doesn't use optim() but instead takes advantage of the mathematical structure of linear models.
+# Using some connections between geometry, calculus, and linear algebra, lm() actually finds the closest model in a single step,
+# using a sophisticated algorithm. This approach is both faster, and guarantees that there is a global minimum.
+
+# 23.2.1 Exercises
+
+# 1. One downside of the linear model is that it is sensitive to unusual values because the distance incorporates a squared term.
+#    Fit a linear model to the simulated data below, and visualise the results.
+#    Rerun a few times to generate different simulated datasets. What do you notice about the model?
+sim1a <- tibble(
+  x = rep(1:10, each = 3),
+  y = x * 1.5 + 6 + rt(length(x), df = 2)
+)
+
+sim1a_mod <- lm(y ~ x, data = sim1a)
+
+ggplot(sim1a, aes(x, y)) +
+  geom_point(size = 2, colour = "grey30") + 
+  geom_abline(intercept = sim1a_mod$coefficients[1], slope = sim1a_mod$coefficients[2])
+
+# 2. One way to make linear models more robust is to use a different distance measure.
+#    For example, instead of root-mean-squared distance, you could use mean-absolute distance:
+measure_distance <- function(mod, data) {
+  diff <- data$y - model1(mod, data)
+  mean(abs(diff))
+}
+#    Use optim() to fit this model to the simulated data above and compare it to the linear model.
+model2 <- function(a, data) {
+  a[1] + data$x * a[2]
+}
+model2(c(7, 1.5), sim1)
+
+measure_distance2 <- function(mod, data) {
+  diff <- data$y - model2(mod, data)
+  mean(abs(diff))
+}
+measure_distance2(c(7, 1.5), sim1)
+
+best2 <- optim(c(0,0), measure_distance2, data = sim1)
+best2$par
+
+# 3. One challenge with performing numerical optimisation is that it's only guaranteed to find one local optimum. 
+#    What's the problem with optimising a three parameter model like this?
+model1 <- function(a, data) {
+  a[1] + data$x * a[2] + a[3]
+}
+
+measure_distance1 <- function(mod, data) {
+  diff <- data$y - model1(mod, data)
+  mean(abs(diff))
+}
+
+best3 <- optim(c(0,0,0), measure_distance2, data = sim1)
+best3$par
+
+# 23.3 Visualising models
+
+# For simple models, like the one above, you can figure out what pattern the captures by carefully studying the model family and fitted coefficients. 
+# And if you ever take a statisitcs course on modelling, you're likely to spend a lot of time doing just that.
+# Here, however, we're going to take a different tack.
+# We're going to focus on understanding a model by looking at its predictions.
+# This has a big advantage: every type of predictive model makes predictions (otherwiese what use would it be?) 
+# so we can use the same set of techniques to understand any type of predictive model.
+
+# It's also useful to see what the model doesn't capture, the so-called residuals which are left after subtracting the predicitions from the data.
+# Residuals are powerful because they allow us to use models to remove striking patterns so we can study the subtler trends that remain.
+
+# 23.3.1 Pridicions
+
+# To visualise the predictions from a model, we start by generating an evenly spaced grid of values that covers the region where our data lies.
+# The easiest way to do that is to use modelr::data_grid().
+# Its first argument is a data frame, and for each subsequent argument it finds the unique variables and then generates all combinations:
+grid <- sim1 %>% 
+  data_grid(x)
+grid
+
+# (This will get more interesting when we start to add more varuables to our model.)
+
+# Next we add predictions. We'll use modelr::predictions() which takes a data frame and a model.
+# It adds the predictions from the model to a new column in the data frame:
+grid <- grid %>% 
+  add_predictions(sim1_mod)
+grid
+
+# Next, we plot predictions. You might wonder about all this ectra work compared to just using geom_abline().
+# But the advantage of this approach is that it will work with any model in R, from the simplest to the most complex.
+# You're only limited by your visualisation skills.
+# For more ideas about how to visualise more complex model types, you might try http://viata.had.co.nz/papers/model-vis.html.
+ggplot(sim1, aes(x)) + 
+  geom_point(aes(y = y)) + 
+  geom_line(aes(y = pred), data = grid, colour = "red", size = 1)
+
+# 23.3.2 Residuals 
+
+# The flip-side of predictions are residuals. This predictions tells you the pattern that the model has captured, and the residuals tell you what the model has missed.
+# The resifuals are just the distances between the observe and predicted values that we computed above.
+
+# We add residuals to the data with add_residuals(), which works much like add_predictions().
+# Note, however, that we use the original dataset, not a manufacutred grid.
+# This is because to compute residuals we need actual y values.
+sim1 <- sim1 %>% 
+  add_residuals(sim1_mod)
+sim1
+
+# There are a few different ways to understand what the residuals tell us about the model.
+# One way is to simply draw a frequency polygon to help us understand the spread of the residuals:
+ggplot(sim1, aes(resid)) + 
+  geom_freqpoly(binwidth = 0.5)
+
+# This helps you calibrate the quality of the model: how far away are the predictions from the observed values?
+# Note that the average of the residual will always be 0.
+
+# You'll often want to recreate plots using the residuals instead of the original predictor. You'll see a lot of that in the next chapter.
 
 
 
@@ -188,12 +388,4 @@ measure_distance(c(7, 1.5), sim1)
 
 
 
-
-
-
-
-
-
-
-
-
+# ----------------------------------------------------------------------------------------------------------------------------
