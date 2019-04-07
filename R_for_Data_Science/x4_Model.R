@@ -335,7 +335,7 @@ best3$par
 # It's also useful to see what the model doesn't capture, the so-called residuals which are left after subtracting the predicitions from the data.
 # Residuals are powerful because they allow us to use models to remove striking patterns so we can study the subtler trends that remain.
 
-# 23.3.1 Pridicions
+# 23.3.1 Predicions
 
 # To visualise the predictions from a model, we start by generating an evenly spaced grid of values that covers the region where our data lies.
 # The easiest way to do that is to use modelr::data_grid().
@@ -352,7 +352,7 @@ grid <- grid %>%
   add_predictions(sim1_mod)
 grid
 
-# Next, we plot predictions. You might wonder about all this ectra work compared to just using geom_abline().
+# Next, we plot predictions. You might wonder about all this extra work compared to just using geom_abline().
 # But the advantage of this approach is that it will work with any model in R, from the simplest to the most complex.
 # You're only limited by your visualisation skills.
 # For more ideas about how to visualise more complex model types, you might try http://viata.had.co.nz/papers/model-vis.html.
@@ -363,7 +363,7 @@ ggplot(sim1, aes(x)) +
 # 23.3.2 Residuals 
 
 # The flip-side of predictions are residuals. This predictions tells you the pattern that the model has captured, and the residuals tell you what the model has missed.
-# The resifuals are just the distances between the observe and predicted values that we computed above.
+# The residuals are just the distances between the observe and predicted values that we computed above.
 
 # We add residuals to the data with add_residuals(), which works much like add_predictions().
 # Note, however, that we use the original dataset, not a manufacutred grid.
@@ -380,7 +380,203 @@ ggplot(sim1, aes(resid)) +
 # This helps you calibrate the quality of the model: how far away are the predictions from the observed values?
 # Note that the average of the residual will always be 0.
 
-# You'll often want to recreate plots using the residuals instead of the original predictor. You'll see a lot of that in the next chapter.
+# You'll often want to recreate plots using the residuals instead of the original predictor. 
+# You'll see a lot of that in the next chapter.
+ggplot(sim1, aes(x, resid)) + 
+  geom_ref_line(h = 0) +
+  geom_point()
+
+# This looks like random noise, suggesting that our model has done a good job of capturing the patterns in the dataset.
+
+# 23.3.3 Exercises 
+
+# 1. Instead of using lm() to fit a straight line, you can use loess() to fit a smooth curve.
+#    Repeat the process of model fitting, grid generation, predictions, and visualisation on sim1 using loess() instead of lm().
+#    How does the result compare to geom_smooth()? 
+
+sim1_test <- sim1
+
+## Building the regression model with loess() function.
+sim1_mode_loess <- loess(y ~ x, sim1_test)
+
+## Create an empty predictiion grid which the columns is the distinct of x vecor.
+grid_loess <- sim1_test %>% data_grid(x)
+
+## Add predictions
+grid_loess <- grid_loess %>% 
+  add_predictions(sim1_mode_loess)
+
+## Visualing the predictions
+ggplot(sim1_test, aes(x)) + 
+  geom_point(aes(y = y)) + 
+  geom_line(data = grid_loess, aes(y = pred), size = 1, colour = "red")
+
+## Add the residuals
+sim1_test <- sim1_test %>% add_residuals(sim1_mode_loess)
+
+## 
+ggplot(sim1_test, aes(resid)) + 
+  geom_freqpoly(binwidth = .5)
+
+ggplot(sim1_test, aes(x, resid)) + 
+  geom_ref_line(h = 0) + 
+  geom_point()
+
+# 2. add_predictions() is paired with gather_predictions() and spread_predictions().
+#    How do these three fucntions differ?
+?add_predictions
+
+## (1) add_predictions(): A data frame. add_prediction adds a single new column, with default name pred, to the input data. 
+## (2) spread_predictions: adds one column for each model. 
+## (3) gather_predictions: adds two columns .model and .pred, and repeats the input rows for each model.
+
+# 3. What does geom_ref_line() do? What package does it come from?
+#    Why is displaying a reference line in plots showing residuals useful and important?
+?geom_ref_line
+
+## (1) It come from modelr packages and add a reference line in the plot. Its equivalent to geom_hline().
+## (2) geom_ref_line() can put a reference line at 0 with resuduals, that's makes the visualiing model better to look.
+
+# 4. Why might you want to look at a frequency polygon of absolute residuals?
+#    What are the pros and cons compared to looking at the raw residuals?
+
+## Because when we look at a frequency polygon of absolute residuals, its easier to view the distribution of the resuduals. 
+
+# 23.4 Formulas and model families
+
+# You've seen formulas before when using facet_wrap() and facet_grid(). In R, formulas provide a general way of getting "special behaviour".
+# Rather than evaluation the values of the variables right away, they capture them so they can be interpreted by the function.
+
+# The majority of modelling funcitons in R use a standard conversion from formulas to funcitons.
+# You've seen one simple conversion already: y ~ x is translated to y = a_1 + a_2 * x.
+# If you want to see what R actually does, you can use model_matrix() function.
+# It takes a data frame and a formula and returns a tible that defines the model equation:
+# each column in the output is associated with one coefficient in the model, the function is always y = a_1 * out1 + a_2 * out_2.
+# For the simplest case of y ~ x1 this shows us something interesting:
+df <- tribble(
+  ~y, ~x1, ~x2,
+  4, 2, 5,
+  5, 1, 6
+)
+model_matrix(df, y ~ x1)
+
+# The way that R adds the intercept to the model us just by having a column that is full of ones.
+# By default, R will always add this column. If you don't want, you need to explicitly drop it with -1:
+model_matrix(df, y ~ x1 - 1)
+
+# The model matrix grows in an unsurprising way when you add more variables to the model:
+model_matrix(df, y ~ x1 + x2)
+
+# The formula notation is sometimes called "Wilkingson-Rogers notation", 
+# and was initially described in Symbolic Description of Factorial Models for Analysis of Variance, by G.N.Wilkinson and C.E.Rogers
+# https://www.jstor.org/stable/2346786?seq=1#page_scan_tab_contents.
+# It's worth digging up and reading the original paper if you'd like to understand the full details of the modelling algebra.
+
+# The following sections expand on how this formula notation works for categorical variables , interactions, and transformation.
+
+# 23.4.1 Catigorical variables
+
+# Generating a funciton from a formula is straight forward when the predictor is continuous, 
+# but things get a bit more complicated when the predictor is categorical.
+# Imagine you have a formula like y ~ sex, where sex could either be male or female.
+# It doesn't make sense to convert that to a formula like y = x_0 + x_1 * sex becaues sex isn't a number - you can't multibly it! 
+# Instead what R does is convert it to y = x_0 + x_1 * sex_male where sex_male is one if sex is male and zero otherwise:
+df <- tribble(
+  ~sex, ~response,
+  "male", 1,
+  "female", 2,
+  "male", 1
+)
+model_matrix(df, response ~ sex)
+
+# You might wonder why R doesn't create a sexfemale column.
+# The problem is that would create a column that is perfectly based on the other columns (i.e. sexfemale = 1 - sexmale).
+# Unfortunately the exact details of why this is a problem is beyond the scope of this book, but basically it create a model family that is too flexible,
+# and will hav infinitely many models that are equally close to the data.
+
+# Fortunately, however, if you forcus on visualising predictions you don't need to worry about the exact parameterisation.
+# Let's look at some data and models to make that concrete.
+# Here's the sim2 dataset from modelr:
+ggplot(sim2) + 
+  geom_point(aes(x, y))
+
+# We can fit a model to it, and generate predictions:
+mod2 <- lm(y ~ x, data = sim2)
+
+grid <- sim2 %>% 
+  data_grid(x) %>% 
+  add_predictions(mod2)
+grid
+
+# Effectively, a model with a categorical x will predict the mean value for each category.
+# (Why? Because the mean minimises the root-mean-squared distance.)
+# That's easy to see if we overlay the predictions on top of the original data:
+ggplot(sim2, aes(x)) + 
+  geom_point(aes(y = y)) + 
+  geom_point(data = grid, aes(y = pred), color = "red", size = 4)
+
+# You can't make predictions about levels that you didn't observe.
+# Sometimes you'll do this by accidnet so it's good to recognise this error message:
+tibble(x = "e") %>% 
+  add_predictions(mod2) 
+# Error in model.frame.default(Terms, newdata, na.action = na.action, xlev = object$xlevels) : factor x has new level e
+
+# 23.4.2 Interactions (continuous and categorical) 
+
+# What happens when you combine a continuous and a categorical vaiable?
+# sim3 contains a categorical predictor and a continuous predictor. We can visualise it with a simple plot:
+ggplot(sim3, aes(x1, y)) + 
+  geom_point(aes(color = x2))
+
+# There are two possible models you could fit to this data:
+mod1 <- lm(y ~ x1 + x2, data = sim3)
+mod2 <- lm(y ~ x1 * x2, data = sim3)
+
+# When you add variables with +, the model will estimate each effect independent of all the others.
+# It's possible to fit the so-called interaction by using *.
+# For example, y ~ x1 * x2 is translated to y = a_0 + a_1 * x1 + a_2 * x2 + a12 * x1 * x2.
+# Note that whenever you use *, both the interaciton and the individual components are included in the model.
+
+# To visualise these models we need two new tricks:
+# 1. We have two predictors, so we need to give data_grid() both variables. 
+#    It finds all the unique values of x1 and x2 and then generates all combinations.
+# 2. To generate predictions from both models simultaneously, we can use gather_predections() which adds each prediction as a row.
+#    The complement of gather_predictions() is spread_predictions() which adds each prediction to a new column.
+# Together this gives us:
+grid <- sim3 %>% 
+  data_grid(x1, x2) %>% 
+  gather_predictions(mod1, mod2)
+grid
+
+# We can visualise the result for both models on one plot using facetting:
+ggplot(sim3, aes(x1, y, color = x2)) + 
+  geom_point() + 
+  geom_line(data = grid, aes(y = pred)) + 
+  facet_wrap(~ model)
+
+# Note that the model that uses + has the same slope for each line, but different intercepts.
+# The model that * has a different slope and intercept for each line.
+
+# Which model is better for this data? We can take at the residuals.
+# Here I've facetted by both model and x2 because it makes it easier to see the pattern within each group.
+sim3 <- sim3 %>% 
+  gather_residuals(mod1, mod2)
+
+ggplot(sim3, aes(x1, resid, color = x2)) + 
+  geom_point() + 
+  facet_grid(model ~ x2)
+
+# There is little obvious pattern in the residuals for mod2.
+# The residuals for mod1 show that the modle has clearly missed some pattern in b, and less so, but still present is pattern in c, and d.
+# You might wonder if there's a precise way to tell which of mod1 or mod2 is better.
+# There is, but it requires a lot of  mathematical bachground, and we don't really care.
+# Here, we're interested in a qualitative assessment of whether or not the model has captured the pattern that we're interested in.
+
+
+
+
+
+
 
 
 
