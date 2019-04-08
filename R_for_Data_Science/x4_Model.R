@@ -572,11 +572,153 @@ ggplot(sim3, aes(x1, resid, color = x2)) +
 # There is, but it requires a lot of  mathematical bachground, and we don't really care.
 # Here, we're interested in a qualitative assessment of whether or not the model has captured the pattern that we're interested in.
 
+# Interactions (two continuous)
+
+# Let's take a look at the equivalent model for two continuous variables.
+# Initially things proceed almost identically to the previous example:
+mod1 <- lm(y ~ x1 + x2, data = sim4)
+mod2 <- lm(y ~ x1 * x2, data = sim4)
+grid <- sim4 %>% 
+  data_grid(
+    x1 = seq_range(x1, 5),
+    x2 = seq_range(x2, 5)
+  ) %>% 
+  gather_predictions(mod1, mod2)
+grid
+
+# Note my use of seq_range() inside data_grid(). Instead of using every unique value of x.
+# I'm going to use a reqularly spaced grid of five values between the minimum and maximum numbers.
+# It's probably not super important here, but it's a useful technique in general.
+# There are two other useful arguments to seq_range():
+# 1. pretty = TRUE will generate a "pretty" sequence, i.e. something that looks nice to the human eye.
+#    This is useful if you want to produce tables of output:
+seq_range(c(0.0123, 0.923423), n = 5)
+seq_range(c(0.0123, 0.923423), n = 5, pretty = TRUE)
+
+# 2. Trim = 0.1 will trim off 10% of the tail vaues. 
+#    This is useful if the variables have a long tailed distribution and you want to focus on generating values near the center:
+x1 <- rcauchy(100)
+seq_range(x1, 5)
+seq_range(x1, 5, trim = 0.10)
+seq_range(x1, 5, trim = 0.25)
+seq_range(x1, 5, trim = 0.50)
+
+# 3. expand = 0.1 is in some sense the opposite of trim() it expands the range by 10%.
+x2 <- c(0, 1)
+seq_range(x2, n = 5)
+seq_range(x2, n = 5, expand = 0.10)
+seq_range(x2, n = 5, expand = 0.25)
+seq_range(x2, n = 5, expand = 0.50)
+
+# Next let's try and visualise that model. We have two continuous predictiors, so you can imagine the model like a 3d surface.
+# We counld display that using geom_tile():
+ggplot(grid, aes(x1, x2)) + 
+  geom_tile(aes(fill = pred)) + 
+  facet_wrap(~ model)
+
+# That doesn't suggest that the models are very different! But that's partly an illusion: 
+# our eyes and brains are not very good at comparing shades of color.
+# Instead of looking at the surface from the top, we could look at it from either side, showing multiple slices:
+ggplot(grid, aes(x1, pred, color = x2, group = x2)) + 
+  geom_line() + 
+  facet_wrap(~ model)
+ggplot(grid, aes(x2, pred, color = x1, group = x1)) + 
+  geom_line() + 
+  facet_wrap(~ model)
+
+# This shows you that interaction between two continuous varaibles works basically the same way as for a categorical and continuous variable.
+# An interaction says that there's not a fixed offset: you need to consider both values of x1 and x2 simultaneously in order to predict y.
+
+# You can see that even with just two continuous variables, coming up with good visualisations are hard.
+# But that's reasonable: you shouldn't expect it will be easy to understand how three or more variables simultaneously interact!
+# But again, we're saved a little because we're using models for exploration, and you can gradually build up your models over time.
+# The model doesn't have to be perfect, it just has to help you reveal a little more about your data.  
+
+# I spent some time looking at the residuals to see if I could figure if mod2 did better than mod1.
+# I think it does, but it's pretty subtle. You'll have a chance to word on it in the exercises.
+
+# 23.4.4 Transformations
+
+# You can also perform transformations inside the model fomula.
+# For example, log(y) ~ sqrt(x1) + x2 is transformed to log(y) = a_1 + a_2 * sqrt(x1) + a_3 * x2.
+# If your transformation involves +, *, or -, you'll need to wrap it in I() so R donesn't treat it like part of the model specification.
+# For example, y ~ x + I(x ^ 2) is translated to y = a_1 + a_2 * x + a_3 * x^2.
+# If you forget the I() and specify y ~ x ^ 2 + x, R will compute y ~ x * x + x.
+# x * x means the interaction of x with itself, which is the smae as x.
+# R automatically grops redundant variables so x + x become x, meaning that y ~ x ^ 2 + x specifies the function y = a_1 + a_2 * x.
+# That's probably not what you intended!
+
+# Again, if you get confused about what your model is doing, you can always use modle_matrix() to see exactly what wquation lm() is fitting:
+df <- tribble(
+  ~y, ~x,
+  1, 1, 
+  2, 2, 
+  3, 3
+)
+
+model_matrix(df, y ~ x^2 + x)
+model_matrix(df, y ~ I(x^2) + x)
+
+# Transformations are useful because you can use them to approximate non-linear functions.
+# If you've taken a calculus class, you may have heard of Taylor's theorem which says you can approximate any smooth function with an infinit sum of polynomials.
+# That means you can use a polynomial function to get arbitrarily close to a smooth funciton by fitting an equation like y = a_1 + a_2 * x + a_3 * x^2 + a_4 * x^3.
+# Typing that sequence by hand is tedious, so R provides a helpter funciton:poly():
+model_matrix(df, y ~ poly(x, 2))
+
+# However there's one major problem with using poly(): outside the rnage of the data, polynomials rapidly shoot positive or negative infinity.
+# One safer alternative is to use the natural spline, splines::ns().
+library(splines)
+model_matrix(df, y ~ ns(x, 2))
+
+# Let's see what looks like when we try and approximate a non-linear function:
+sim5 <- tibble(
+  x = seq(0, 3.5 * pi, length = 50),
+  y = 4 * sin(x) + rnorm(length(x))
+)
+ggplot(sim5, aes(x, y)) + 
+  geom_point()
+
+# I'm going to fit five models to this data.
+mod1 <- lm(y ~ ns(x, 1), data = sim5)
+mod2 <- lm(y ~ ns(x, 2), data = sim5)
+mod3 <- lm(y ~ ns(x, 3), data = sim5)
+mod4 <- lm(y ~ ns(x, 4), data = sim5)
+mod5 <- lm(y ~ ns(x, 5), data = sim5)
+
+grid <- sim5 %>% 
+  data_grid(x = seq_range(x, n = 5, expand = 0.1)) %>% 
+  gather_predictions(mod1, mod2, mod3, mod4, mod5, .pred = "y")
+
+ggplot(sim5, aes(x, y)) + 
+  geom_point() + 
+  geom_line(data = grid, color = "red") + 
+  facet_wrap(~ model)
+
+# Notice that the extrapolation outside the range of the data is clearly bad. This is the downside to approximating a function with a polynomial.
+# But this is a very real problem with every model: 
+# the model can never tell you if the behaviour is true when you start extrapolating ouside the range of the data that you have seen.
+# You must rely on theory and science.
+
+# 23.4.5 Exercises
+
+# 1. What happens if you repeat the analysis of sim2 using a model without an intercept.
+#    What happens to the model equation? What happens to the predictions?
 
 
 
+# 2. Use model_matrix() to explore the equations generated for the models I fit to sim3 and sim4. Why is * a good shorthand for interaction?
 
 
+
+# 3. Using the basic princiles, convert the formulas in the following two models into funciton.
+#    (Hint: start by converting the categorical variable into 0-1 variabels.)
+mod1 <- lm(y ~ x1 + x2, data = sim3) 
+mod2 <- lm(y ~ x1 * x2, data = sim3)
+
+
+
+# 4. sim4, which of mod1 and mod2 is better? I think mod2 does a slightly better job at removing patterns, but it's pretty subtle.
+#    Can you come up with a plot to support my claim?
 
 
 
