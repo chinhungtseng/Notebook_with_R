@@ -10,7 +10,7 @@
 #  /-----------------------------------------------------------------\
 #  |                                                                 |
 #  |                   /---------------------------\                 |
-#  |                   |         --> Visalise -->  |                 |
+#  |                   |         --> Visualise -->  |                 |
 #  |                   |        |               |  |                 |
 #  | Import --> Tidy --|--> Transform           |  |--> Communicate  |
 #  |                   |        |               |  |                 |
@@ -363,7 +363,7 @@ ggplot(sim1, aes(x)) +
 # 23.3.2 Residuals 
 
 # The flip-side of predictions are residuals. This predictions tells you the pattern that the model has captured, and the residuals tell you what the model has missed.
-# The residuals are just the distances between the observe and predicted values that we computed above.
+# The residuals are just the distances between the observed and predicted values that we computed above.
 
 # We add residuals to the data with add_residuals(), which works much like add_predictions().
 # Note, however, that we use the original dataset, not a manufacutred grid.
@@ -393,13 +393,12 @@ ggplot(sim1, aes(x, resid)) +
 # 1. Instead of using lm() to fit a straight line, you can use loess() to fit a smooth curve.
 #    Repeat the process of model fitting, grid generation, predictions, and visualisation on sim1 using loess() instead of lm().
 #    How does the result compare to geom_smooth()? 
-
 sim1_test <- sim1
 
 ## Building the regression model with loess() function.
 sim1_mode_loess <- loess(y ~ x, sim1_test)
 
-## Create an empty predictiion grid which the columns is the distinct of x vecor.
+## Create an empty predictiion grid which the columns is the distinct of x vector.
 grid_loess <- sim1_test %>% data_grid(x)
 
 ## Add predictions
@@ -414,7 +413,6 @@ ggplot(sim1_test, aes(x)) +
 ## Add the residuals
 sim1_test <- sim1_test %>% add_residuals(sim1_mode_loess)
 
-## 
 ggplot(sim1_test, aes(resid)) + 
   geom_freqpoly(binwidth = .5)
 
@@ -516,7 +514,7 @@ ggplot(sim2, aes(x)) +
   geom_point(data = grid, aes(y = pred), color = "red", size = 4)
 
 # You can't make predictions about levels that you didn't observe.
-# Sometimes you'll do this by accidnet so it's good to recognise this error message:
+# Sometimes you'll do this by accident so it's good to recognise this error message:
 tibble(x = "e") %>% 
   add_predictions(mod2) 
 # Error in model.frame.default(Terms, newdata, na.action = na.action, xlev = object$xlevels) : factor x has new level e
@@ -645,10 +643,10 @@ ggplot(grid, aes(x2, pred, color = x1, group = x1)) +
 # For example, y ~ x + I(x ^ 2) is translated to y = a_1 + a_2 * x + a_3 * x^2.
 # If you forget the I() and specify y ~ x ^ 2 + x, R will compute y ~ x * x + x.
 # x * x means the interaction of x with itself, which is the smae as x.
-# R automatically grops redundant variables so x + x become x, meaning that y ~ x ^ 2 + x specifies the function y = a_1 + a_2 * x.
+# R automatically drops redundant variables so x + x become x, meaning that y ~ x ^ 2 + x specifies the function y = a_1 + a_2 * x.
 # That's probably not what you intended!
 
-# Again, if you get confused about what your model is doing, you can always use modle_matrix() to see exactly what wquation lm() is fitting:
+# Again, if you get confused about what your model is doing, you can always use modle_matrix() to see exactly what equation lm() is fitting:
 df <- tribble(
   ~y, ~x,
   1, 1, 
@@ -665,7 +663,7 @@ model_matrix(df, y ~ I(x^2) + x)
 # Typing that sequence by hand is tedious, so R provides a helpter funciton:poly():
 model_matrix(df, y ~ poly(x, 2))
 
-# However there's one major problem with using poly(): outside the rnage of the data, polynomials rapidly shoot positive or negative infinity.
+# However there's one major problem with using poly(): outside the range of the data, polynomials rapidly shoot positive or negative infinity.
 # One safer alternative is to use the natural spline, splines::ns().
 library(splines)
 model_matrix(df, y ~ ns(x, 2))
@@ -686,7 +684,7 @@ mod4 <- lm(y ~ ns(x, 4), data = sim5)
 mod5 <- lm(y ~ ns(x, 5), data = sim5)
 
 grid <- sim5 %>% 
-  data_grid(x = seq_range(x, n = 5, expand = 0.1)) %>% 
+  data_grid(x = seq_range(x, n = 50, expand = 0.1)) %>% 
   gather_predictions(mod1, mod2, mod3, mod4, mod5, .pred = "y")
 
 ggplot(sim5, aes(x, y)) + 
@@ -704,16 +702,78 @@ ggplot(sim5, aes(x, y)) +
 # 1. What happens if you repeat the analysis of sim2 using a model without an intercept.
 #    What happens to the model equation? What happens to the predictions?
 
-
+## To remove a intercept from a model, just add -1 in the model:
+mod2a <- lm(y ~ x, data = sim2)
+mod2b <- lm(y ~ x - 1, data = sim2)
+grid <- sim2 %>% 
+  data_grid(x) %>% 
+  spread_predictions(mod2a, mod2b)
+grid
+## The predictions are the same in the models with and without an intercept.
 
 # 2. Use model_matrix() to explore the equations generated for the models I fit to sim3 and sim4. Why is * a good shorthand for interaction?
 
+## (1)
+sim3 ## x2 is a categorical variable.
 
+x3 <- model_matrix(y ~ x1 * x2, data = sim3)
+x3
 
-# 3. Using the basic princiles, convert the formulas in the following two models into funciton.
+all(x3[['x1:x2b']] == x3[['x1']] * x3[['x2b']])
+all(x3[['x1:x2c']] == x3[['x1']] * x3[['x2c']])
+all(x3[['x1:x2d']] == x3[['x1']] * x3[['x2d']])
+
+## (2)
+sim4
+x4 <- model_matrix(y ~ x1 * x2, data = sim4)
+x4
+
+all(x4[['x1']] * x4[['x2']] == x4[['x1:x2']])
+
+# 3. Using the basic principles, convert the formulas in the following two models into funciton.
 #    (Hint: start by converting the categorical variable into 0-1 variabels.)
 mod1 <- lm(y ~ x1 + x2, data = sim3) 
 mod2 <- lm(y ~ x1 * x2, data = sim3)
+
+model_matrix(y ~ x1 + x2, data = sim3)
+model_matrix_mod1 <- function(df) {
+  df %>% mutate(
+    x2b = as.numeric(x2 == 'b'),
+    x2c = as.numeric(x2 == 'c'),
+    x2d = as.numeric(x2 == 'd'),
+    `(Intercept)` = 1
+  ) %>% 
+    select(`(Intercept)`, x1, x2b:x2d)
+}
+model_matrix_mod1(sim3)
+
+
+
+sim3
+model_matrix_mod1b <- function(...){
+  
+}
+
+test <- sim3
+nm <- test[test %>% map_lgl(is.factor)] %>% names()
+nm_fac <- test[[nm]] %>% levels() %>% .[-1]
+
+for(i in nm_fac) {
+  var_name <- str_c("x2", i)
+  test[[var_name]] <- as.numeric(test$x2 == i)
+}
+test
+
+
+
+
+model_matrix(y ~ x1 * x2, data = sim3)
+
+
+
+
+
+
 
 
 
@@ -723,7 +783,112 @@ mod2 <- lm(y ~ x1 * x2, data = sim3)
 
 
 
+# 23.5 Missing values
 
+# Missing values obviously can not convey any information about the relationship between the variables,
+# so modelling funcitons will drop any rows that contain missing values.
+# R's default behaviour is to silently drop them, but options(na.action = na.warn) (run in the prerequisites), makes sure you get a warning.
+df <- tribble(
+  ~x, ~y,
+  1, 2.2,
+  2, NA,
+  3, 3.5,
+  4, 8.3,
+  NA, 10
+)
+mod <- lm(y ~ x, data = df)
 
+# To suppress the warning, set na.action = na.exclude:
+mod <- lm(y ~ x, data=  df, na.action = na.exclude)
+
+# You can always see exactly how many observations were used with nobs():
+nobs(mod)
+
+# 23.6 Other model families
+
+# This chapter has focussed exclusively on the class of linear models, which assume a relationship of the form y = a_1 * x1 + a_2 * x2 + ... + a_n * xn.
+# Linear models additionally assume that the residuals have a normal distribution, which we haven't talked about.
+# There are a large set of model classes that the linear model in various interesting ways. Some of them are:
+# 1. Generalised linear models, e.g. stats::glm(). Lineaer models assume that the response is continuous and the error has a normal distribution.
+#    Generalised linear models extend linear models to include non-continuous responses(e.g. binary data or counts).
+#    They work by defining a distance metric based on the statistical idea of likelihood.
+# 2. Generalised additive models, mgcv::gam(), extend generalised linear models to incorporate arbitrary smooth functions.
+#    That means you can write a formula like y ~ s(x) which becomes an equation like y = f(x) and let gam() estimate what that function is 
+#    (subject to some smoothness constraints to make the proclem tractable).
+# 3. Penalised linear models, e.g. glmnet::glmnet(), add a penalty term to the distance that penalises complex models 
+#    (as defined by the distance betweeen the parameteer vector and the origin).
+#    This tends to make models that generalise better to new datasets from the same population.
+# 4. Robust linear modesl, e.g. MASS::rlm(), tweak the distance to downweights oints that are very far away.
+#    This makes them less sensitive to the presence of outliers, at the cost of being not quite as good when there are no outliers.
+# 5. Trees, e.g. rpart::rpart(), attack the probelm in a completely different way than linear models.
+#    They fit a piece-wise constant model, splitting the data into progressive ly smaller and samller pieces.
+#    Tree aren't terribly effective by themselves, but they are very powerful when used in aggregate by models like random forests
+#    (e.g. randomForest::randomForest()) or grandient boosting machines(e.g. xgboost::xgboost).
+
+# These models all work similarly from a programming perspective. 
+# Once you've mastered linear models, you should find it easy to master the mechanics of these other model classes.
+# Being a skilled modeller is a mixture mixture of some good general principles and having a big toolbox of techniques.
+# Now that you've learnned some general tools and one useful class of models, you can go on and learn more classes from other sources.
 
 # ----------------------------------------------------------------------------------------------------------------------------
+
+# 24 Model building
+
+# 24.1 Introduction
+
+# In the previous chapter you learned how linear models word, and learned some basic tools for understanding what a model is telling you about your data.
+# The previous chapter focussed on simulated datasets. This chapter will focus on read data, 
+# showing you how you can progressively build up a model to aid your understanding of the data.
+
+# We will take advantage of the fact that you can think about a model partitioning your data into pattern and residuals.
+# We'll find patterns with visualisation, then make them concrete and precise with a model.
+# We'll then repeat the precess, but replace the old response variabel with the residuals from the models.
+# The goal is to transition from implicit knowledge in the data and our head to ecplicit knowledge in a quantitative model.
+# This makes it easier to apply to new domains, and easier for other to use.
+
+# For very large and complex datasets this will be a lot of work. There are certainly alternative approaches 
+# - a more machine learning approach is simply to focus on the predictive ability of the model.
+# These approaches tend to produce black boxes: the model does a really good job at generating predictions, but you don't know why.
+# This is a totally reasonable approach, but it does make it hard to apply your real world knowledge to the model.
+# That, in turn, makes it difficult to assess whether or not the model will continue to work in the long-term, as fundamentals change.
+# For most real models, I'd expect you to use some combination of this approach and a more classic automated approach.
+
+# It's a challenge to know when to stop. You need to figure our when your model is good enough, and when additional investment is unlikely to pay off.
+# I particularly like this quote from reddit user Broseidon241:
+
+#```
+# A long time ago in art class, my teacher told me "An artist needs to know when a piece is done.
+# You can't tweak something into perfection - wrap it up. If you don't like it, do it over again.
+# Otherwise begin something new". Later in life, I heard "A poor seamstress makes many mistakes.
+# A good seamstress works head to correct those mistakes. A great seamstress isn't afraid to throw out the garment and start over."
+
+# - Broseidon241, https://www.reddit.com/r/datascience/comments/4irajq
+#```
+
+# 24.1.1 Prerequisites
+
+# We'll use the same tools as in the previous chapters, but add in some real datasets: diamonds from ggplot2, and flights from nycflights13.
+# We'll also need lubridata in order to work with the date/times in flights.
+library(tidyverse)
+library(modelr)
+options(na.action = na.warn)
+
+library(lubridate)
+library(nycflights13)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
