@@ -633,7 +633,7 @@ ggplot(grid, aes(x2, pred, color = x1, group = x1)) +
 # The model doesn't have to be perfect, it just has to help you reveal a little more about your data.  
 
 # I spent some time looking at the residuals to see if I could figure if mod2 did better than mod1.
-# I think it does, but it's pretty subtle. You'll have a chance to word on it in the exercises.
+# I think it does, but it's pretty subtle. You'll have a chance to work on it in the exercises.
 
 # 23.4.4 Transformations
 
@@ -735,7 +735,9 @@ all(x4[['x1']] * x4[['x2']] == x4[['x1:x2']])
 mod1 <- lm(y ~ x1 + x2, data = sim3) 
 mod2 <- lm(y ~ x1 * x2, data = sim3)
 
+## (1) - a
 model_matrix(y ~ x1 + x2, data = sim3)
+
 model_matrix_mod1 <- function(df) {
   df %>% mutate(
     x2b = as.numeric(x2 == 'b'),
@@ -747,41 +749,68 @@ model_matrix_mod1 <- function(df) {
 }
 model_matrix_mod1(sim3)
 
-
-
-sim3
-model_matrix_mod1b <- function(...){
-  
-}
-
-test <- sim3
-nm <- test[test %>% map_lgl(is.factor)] %>% names()
-nm_fac <- test[[nm]] %>% levels() %>% .[-1]
-
-for(i in nm_fac) {
-  var_name <- str_c("x2", i)
-  test[[var_name]] <- as.numeric(test$x2 == i)
-}
-test
-
-
-
-
+## (1) - b
 model_matrix(y ~ x1 * x2, data = sim3)
 
+model_matrix_mod1b <- function(df){
+  nm <- df[df %>% map_lgl(is.factor)] %>% names()
+  nm_fac <- df[[nm]] %>% levels() %>% .[-1]
+  for(i in nm_fac) {
+    var_name <- str_c("x2", i)
+    df[[var_name]] <- as.numeric(df$x2 == i)
+  }
+  df[['(Intercept)']] <- 1
+  df %>% select(`(Intercept)`, x1, contains("x2"), -x2)
+}
+model_matrix_mod1b(sim3)
 
+## (2) 
+model_matrix(y ~ x1 * x2, data = sim3)
 
-
-
-
-
-
-
+model_matrix_mod2a <- function(df){
+  nm <- df[df %>% map_lgl(is.factor)] %>% names()
+  nm_fac <- df[[nm]] %>% levels() %>% .[-1]
+  nn <- vector("character", length(nm_fac))
+  for(i in seq_along(nm_fac)) {
+    var_name <- str_c("x2", nm_fac[[i]])
+    nn[[i]] <- var_name
+    df[[var_name]] <- as.numeric(df$x2 == i)
+  }
+  for (i in nn) {
+    nn_new <- str_c("x1:", i)
+    df[[nn_new]] <- df$x1 * df[[i]]
+  }
+  df[['(Intercept)']] <- 1
+  df %>% select(`(Intercept)`, x1, matches(str_c(nn, collapse = '|')))
+}
+model_matrix_mod2a(sim3)
+  
 # 4. sim4, which of mod1 and mod2 is better? I think mod2 does a slightly better job at removing patterns, but it's pretty subtle.
 #    Can you come up with a plot to support my claim?
+mod1 <- lm(y ~ x1 + x2, data = sim4)
+mod2 <- lm(y ~ x1 * x2, data = sim4)
 
+grid <- sim4 %>% 
+  data_grid(x1 = seq_range(x1, 20),
+            x2 = seq_range(x2, 20)) %>% 
+  gather_predictions(mod1, mod2)
 
+ggplot(grid, aes(x1, x2)) + 
+  geom_tile(aes(fill = pred)) + 
+  facet_grid(~ model)
 
+sim4 %>% 
+  gather_residuals(mod1, mod2) %>% 
+  ggplot(aes(resid)) + 
+  geom_freqpoly(aes(color = model), binwidth = .5) +
+  facet_grid(~ model)
+
+sim4 %>% 
+  gather_residuals(mod1, mod2) %>% 
+  group_by(model) %>% 
+  summarise(resid = sd(resid))
+## It seems that there are no obviously different between the models.
+## we can check the sd of mod1 is 2.10, mod2 is 2.07. the sd of mod2 is less than sd of mod1.
 
 # 23.5 Missing values
 
@@ -940,6 +969,84 @@ ggplot(diamonds2, aes(clarity, lresid)) + geom_boxplot()
 # To interpret the y axis, we need to think about what the residuals are telling us, and what scale they are on.
 # A residual of -1 indicates that lprice was 1 unit lower than a prediciton based solely on its weight.
 # 2^-1 is 1/2 , points with a value of -1 are half the expected price, and residuals with value 1 are twice the predicted price.
+
+# 24.2.2 A more complicated model
+
+# If we wanted to, we could continue to build up our model, moving the effects we've observed into the model to make them explicit.
+# For example, we could include color, cut, and clarity into the model so that we also make explicit the effect of three categorical variables:
+mod_diamond2 <- lm(lprice ~ lcarat + color + cut + clarity, data = diamonds2)
+
+# This model now includes four predictors, so it's getting header to visulise. 
+# Fortunately, they're currently all independent which means that we can plot them individually in four plots.
+# To make the process a little easier, we're going to use the .model argument to data_grid:
+grid <- diamonds2 %>% 
+  data_grid(cut, .model = mod_diamond2) %>% 
+  add_predictions(mod_diamond2)
+grid
+
+ggplot(grid, aes(cut, pred)) + 
+  geom_point()
+
+# If the model needs variables that you haven't explicitly supplied, data_grid() will automatically fill them in with "typical" value.
+# For continuous variables, it uses the median, and categorical variables it uses the most common value (or values, if there's a tie).
+diamonds2 <- diamonds2 %>% 
+  add_residuals(mod_diamond2, 'lresid2')
+
+ggplot(diamonds2, aes(lcarat, lresid2)) + 
+  geom_hex(bins = 50)
+
+# That plot indicates that there are some diamonds with quite large residuals -
+# remember a residual of 2 indicates that the diamond is 4x the price that we expected.
+# It's often useful to look at unusual values individually:
+diamonds2 %>% 
+  filter(abs(lresid2) > 1) %>% 
+  add_predictions(mod_diamond2) %>% 
+  mutate(pred = round(2 ^ pred)) %>% 
+  select(price, pred, carat:table, x:z) %>% 
+  arrange(price)
+
+# Nothing really jumps out at me here, but it's probably worth spending time considering if this indicates a problem with our model, or if there are errors ing the data.
+# If there are mistakes in the data, this could be an opportunity to buy diamonds that have been priced low incorrectly.
+
+# 24.2.3 Exercises
+
+# 1. In the plot of lcarat vs. lprice, there are some bright vertical strips. What do they represent?
+diamonds %>% 
+  filter(carat <= 2.5) %>% 
+  mutate(lprice = log2(price),
+         lcarat = log2(carat)) %>% 
+  ggplot(aes(lcarat, lprice)) + 
+  geom_hex(bins = 50)
+
+## The bright vertical strips means that many diamonds are cut to those weight.
+
+# 2. If log(price) = a_0 + a_1 * log(carat), what does that say about the relationship between price and carat?
+ggplot(data = grid, aes(carat, price)) + 
+  geom_line()
+## We know the relationship between log(price) and log(carat) is linear, but the relationship between price and carat is not linear.
+
+# 3. Extract the diamonds that have very high and very low residuals. Is there anything unusual about these diamonds?
+#    Are they particularly bad or good, or do you think these are pricing errors?
+diamonds2 %>% 
+  add_residuals(mod_diamond2) %>% 
+  filter(abs(resid) > 1) %>% 
+  add_predictions(mod_diamond2) %>% 
+  mutate(pred = round(2 ^ pred)) %>% 
+  select(price, pred, everything()) %>% 
+  arrange(price) 
+
+# 4. Does the final model, mod_diamonds2, do a good job of predicting diamond prices?
+#    Would you trust it to tell you how much to spend if you were buying a diamonds?
+
+# 24.3 What affects the number of daily flights
+
+
+
+
+
+
+
+
 
 
 

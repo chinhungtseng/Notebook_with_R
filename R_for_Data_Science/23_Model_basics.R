@@ -656,7 +656,9 @@ all(x4[['x1']] * x4[['x2']] == x4[['x1:x2']])
 mod1 <- lm(y ~ x1 + x2, data = sim3) 
 mod2 <- lm(y ~ x1 * x2, data = sim3)
 
+## (1) - a
 model_matrix(y ~ x1 + x2, data = sim3)
+
 model_matrix_mod1 <- function(df) {
   df %>% mutate(
     x2b = as.numeric(x2 == 'b'),
@@ -668,41 +670,68 @@ model_matrix_mod1 <- function(df) {
 }
 model_matrix_mod1(sim3)
 
-
-
-sim3
-model_matrix_mod1b <- function(...){
-  
-}
-
-test <- sim3
-nm <- test[test %>% map_lgl(is.factor)] %>% names()
-nm_fac <- test[[nm]] %>% levels() %>% .[-1]
-
-for(i in nm_fac) {
-  var_name <- str_c("x2", i)
-  test[[var_name]] <- as.numeric(test$x2 == i)
-}
-test
-
-
-
-
+## (1) - b
 model_matrix(y ~ x1 * x2, data = sim3)
 
+model_matrix_mod1b <- function(df){
+  nm <- df[df %>% map_lgl(is.factor)] %>% names()
+  nm_fac <- df[[nm]] %>% levels() %>% .[-1]
+  for(i in nm_fac) {
+    var_name <- str_c("x2", i)
+    df[[var_name]] <- as.numeric(df$x2 == i)
+  }
+  df[['(Intercept)']] <- 1
+  df %>% select(`(Intercept)`, x1, contains("x2"), -x2)
+}
+model_matrix_mod1b(sim3)
 
+## (2) 
+model_matrix(y ~ x1 * x2, data = sim3)
 
-
-
-
-
-
+model_matrix_mod2a <- function(df){
+  nm <- df[df %>% map_lgl(is.factor)] %>% names()
+  nm_fac <- df[[nm]] %>% levels() %>% .[-1]
+  nn <- vector("character", length(nm_fac))
+  for(i in seq_along(nm_fac)) {
+    var_name <- str_c("x2", nm_fac[[i]])
+    nn[[i]] <- var_name
+    df[[var_name]] <- as.numeric(df$x2 == i)
+  }
+  for (i in nn) {
+    nn_new <- str_c("x1:", i)
+    df[[nn_new]] <- df$x1 * df[[i]]
+  }
+  df[['(Intercept)']] <- 1
+  df %>% select(`(Intercept)`, x1, matches(str_c(nn, collapse = '|')))
+}
+model_matrix_mod2a(sim3)
 
 # 4. sim4, which of mod1 and mod2 is better? I think mod2 does a slightly better job at removing patterns, but it's pretty subtle.
 #    Can you come up with a plot to support my claim?
+mod1 <- lm(y ~ x1 + x2, data = sim4)
+mod2 <- lm(y ~ x1 * x2, data = sim4)
 
+grid <- sim4 %>% 
+  data_grid(x1 = seq_range(x1, 20),
+            x2 = seq_range(x2, 20)) %>% 
+  gather_predictions(mod1, mod2)
 
+ggplot(grid, aes(x1, x2)) + 
+  geom_tile(aes(fill = pred)) + 
+  facet_grid(~ model)
 
+sim4 %>% 
+  gather_residuals(mod1, mod2) %>% 
+  ggplot(aes(resid)) + 
+  geom_freqpoly(aes(color = model), binwidth = .5) +
+  facet_grid(~ model)
+
+sim4 %>% 
+  gather_residuals(mod1, mod2) %>% 
+  group_by(model) %>% 
+  summarise(resid = sd(resid))
+## It seems that there are no obviously different between the models.
+## we can check the sd of mod1 is 2.10, mod2 is 2.07. the sd of mod2 is less than sd of mod1.
 
 # 23.5 Missing values
 
