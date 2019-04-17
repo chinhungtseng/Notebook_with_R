@@ -366,7 +366,7 @@ ggplot(sim1, aes(x)) +
 # The residuals are just the distances between the observed and predicted values that we computed above.
 
 # We add residuals to the data with add_residuals(), which works much like add_predictions().
-# Note, however, that we use the original dataset, not a manufacutred grid.
+# Note, however, that we use the original dataset, not a manufactured grid.
 # This is because to compute residuals we need actual y values.
 sim1 <- sim1 %>% 
   add_residuals(sim1_mod)
@@ -1040,7 +1040,84 @@ diamonds2 %>%
 
 # 24.3 What affects the number of daily flights
 
+# Let's work through a similar process for a dataset that seems even simpler at first glance: the number of flights that leave NYC per day.
+# This is really small dataset - only 365 rows and 2 columns - and we're not going to end up with a fully realised model, 
+# but as you'll see, the steps along the way will help us better understand the data.
+# Let's get started by counting the number of flights per day and visualising it with ggplot2.
 
+daily <- flights %>% 
+  mutate(date = make_date(year, month, day)) %>% 
+  group_by(date) %>% 
+  summarise(n = n())
+daily
+
+ggplot(daily, aes(date, n)) + 
+  geom_line()
+
+# 24.3.1 Day of week
+
+# Understanding the long-term trend is challenging because there's very strong day-of-week effect that dominates the subtler patterns.
+# Let's start by looking at the distribution of flight numbers by day-of-week:
+
+daily <- daily %>% 
+  mutate(wday = wday(date, label = TRUE))
+ggplot(daily, aes(wday, n)) + 
+  geom_boxplot()
+
+# There are fewer flights on weekends because most travel is for business.
+# The effect is particularly pronounced on Saturday: you might sometimes leave on Sunday for a Monday morning meeting, 
+# but it's very rare that you'd leave on Saturday as you'd much rather be at home with your family.
+
+# One way to remove this strong pattern is to use a model. 
+# First, we fit the model, and display its predictions overlaid on the original data:
+mod <- lm(n ~ wday, data = daily)
+
+grid <- daily %>% 
+  data_grid(wday) %>% 
+  add_predictions(mod, "n")
+
+ggplot(daily, aes(wday, n)) + 
+  geom_boxplot() + 
+  geom_point(data = grid, color = "red", size = 4)
+
+# Next we compute and visualise the residuals:
+daily <- daily %>% 
+  add_residuals(mod)
+daily %>% 
+  ggplot(aes(date, resid)) + 
+  geom_ref_line(h = 0) + 
+  geom_line()
+
+# Note the change in the y-axis: now we are seeing the deviation from the expected number of flights, given the day of week.
+# This plot is useful because now that we've removed much of the large day-of-week effect, we can see some of the subtler patterns that remain:
+# 1. our model seems to fail starting in June: you can still see a strong regular pattern that our model hasn't captured.
+#    Drawing a plot with one line for each day of the week makes the cause easier to see:
+ggplot(daily, aes(date, resid, color = wday)) + 
+  geom_ref_line(h = 0) + 
+  geom_line()
+
+#    Our model fails to accurately predict the number of flights on Saturday: during summer there are more flights than we expect, 
+#    and during Fall there are fewer. We'll see how we can do better to capture this pattern in the next section.
+
+# 2. There are some days with far fewer flights than expected:
+daily %>% 
+  filter(resid < -100)
+
+#    If you're familiar with American public holiday, you might spot New Year's day, July 4th, Thanksgiving and Christmas.
+#    There are some others that don't seem to correspond to public holiday.
+#    You'll work on those in one of the exercises.
+
+# There seems to be some smoother long term trend over the course of a year.
+# We can highlight that trend with geom_smooth():
+daily %>% 
+  ggplot(aes(date, resid)) + 
+  geom_ref_line(h = 0) + 
+  geom_line(color = "grey50") + 
+  geom_smooth(se = FALSE, span = 0.20)
+
+# There are fewer flights in January (and December), and more in summer (May-Sep).
+# We can't do much with this pattern quantitatively, because we only have a single year of data.
+# But we can use our domain knowledge to brainstorm potential explanations.
 
 
 
