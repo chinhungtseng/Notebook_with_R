@@ -10,7 +10,7 @@
 #  /-----------------------------------------------------------------\
 #  |                                                                 |
 #  |                   /---------------------------\                 |
-#  |                   |         --> Visualise -->  |                 |
+#  |                   |         --> Visualise --> |                 |
 #  |                   |        |               |  |                 |
 #  | Import --> Tidy --|--> Transform           |  |--> Communicate  |
 #  |                   |        |               |  |                 |
@@ -1038,6 +1038,11 @@ diamonds2 %>%
 # 4. Does the final model, mod_diamonds2, do a good job of predicting diamond prices?
 #    Would you trust it to tell you how much to spend if you were buying a diamonds?
 
+
+
+
+
+
 # 24.3 What affects the number of daily flights
 
 # Let's work through a similar process for a dataset that seems even simpler at first glance: the number of flights that leave NYC per day.
@@ -1118,6 +1123,216 @@ daily %>%
 # There are fewer flights in January (and December), and more in summer (May-Sep).
 # We can't do much with this pattern quantitatively, because we only have a single year of data.
 # But we can use our domain knowledge to brainstorm potential explanations.
+
+# 24.3.2 Seasonal Saturday effect 
+
+# Let's first tackle our failure to accruately predict the number of flights on Saturday.
+# A good place to start is to go back to the raw numbers, focussing on Saturdays:
+daily %>% 
+  filter(wday == "Sat") %>% 
+  ggplot(aes(date, n)) + 
+  geom_point() + 
+  geom_line() + 
+  scale_x_date(NULL, date_breaks = "1 month", date_labels = "%b") # format: Month: "%m" (2 digits), "%b" (abbreviated name in current locale), "%B" (full name in current locale).
+
+# (I've used both points and lines to make it more clear what is data and what is interpolation.)
+
+# I suspect this pattern is caused by summer holidays: 
+# many people go on holiday in the summer, and people don't mind travelling on Saturdays for vacation.
+# Looking at this plot, we might guess that summer holidays are from early June to late August.
+# That seems to line up fairly well with the state's school terms: summer break in 2014 was Jun 26-Sep 9.
+
+# Why are there more Saturday flights in the Spring than the Fall? 
+# I asked some American friends and they suggested that it's less common to plan family vacations during the Fall because of the big Thanksgiving and Christmas holidays.
+# We don't have the data to know for sure, but it seems like a plausible working hypothesis.
+
+# Lets create a "term" variable that roughly captures the three school terms, and check our work with a plot:
+term <- function(date) {
+  cut(date,
+      breaks = ymd(20130101, 20130605, 20130825, 20140101),
+      labels = c("spring", "summer", "fall")
+      )
+}
+
+daily <- daily %>% 
+  mutate(term = term(date))
+
+daily %>% 
+  filter(wday == "Sat") %>% 
+  ggplot(aes(date, n, color = term)) + 
+  geom_point(alpha = 1/3) + 
+  geom_line() + 
+  scale_x_date(NULL, date_breaks = "1 month", date_labels = "%b")
+# (I manually tweaked the dates to get nice breaks in the plot. 
+# Using a visualisation to help understand what your function is doing is a really powerful and general technique.)
+
+# It's useful to see how this new variable affects the other days of the week:
+daily %>% 
+  ggplot(aes(wday, n, color = term)) + 
+  geom_boxplot()
+
+# It looks like there is significant variation across the terms, so fitting a separate day of week effect for each term is reasonable.
+# This improves our model, but not as much as we might hope:
+mod1 <- lm(n ~ wday, data = daily)
+mod2 <- lm(n ~ wday * term, data = daily)
+
+daily %>% 
+  gather_residuals(without_term = mod1, with_term = mod2) %>% 
+  ggplot(aes(date, resid, color = model)) + 
+  geom_line(alpha = 0.75)
+
+# We can see the problem by overlaying the pridictions from the model on to the raw data:
+grid <- daily %>% 
+  data_grid(wday, term) %>% 
+  add_predictions(mod2, "n")
+
+ggplot(daily, aes(wday, n)) + 
+  geom_boxplot() + 
+  geom_point(data = grid, color = "red") + 
+  facet_wrap(~ term)
+
+# Our model is finding the mean effect, but we have a lot of big outliers, so mean tends to be far away from the typical value.
+# We can alleviate this problem by using a model that is robust to the effect of outliers: MASS::rml().
+# This greatly reduces the impact of the outliers on our estimates, and gives a model that does a good job of removing the day of week pattern:
+mod3 <- MASS::rlm(n ~ wday * term, data = daily)
+
+daily %>% 
+  add_residuals(mod3, "resid") %>% 
+  ggplot(aes(date, resid)) + 
+  geom_hline(yintercept = 0, size = 2, color = "white") + 
+  geom_line()
+
+# It's now much easier to see the long-term trend, and the positive and negative outliers.
+
+# 24.3.3 Computed variables 
+
+# If you're experimenting with many models and many visualisations, 
+# it's a good idea to bundle the creation of variables up into a function so there's no chance of accidentally applying a different transformation in defferent places.
+# For example, we could wirte:
+compute_vars <- function(date) {
+  data %>% 
+    mutate(
+      term = term(date),
+      wday = wday(date, label = TRUE)
+    )
+}
+
+# Another option is to put the transformations directly in the model formula:
+wday2 <- function(x) wday(x, label = TRUE)
+mod3 <- lm(n ~wday2(date) * term(date), data = daily)
+
+# Either approach is reasonable. Making the transformed variable explicit is useful 
+# if you want to check your work, or use them in a visualisation.
+# But you can't easily use transformations (like splines) that return multiple columns.
+# Including the transformations in the model function makes life a little easier 
+# when you're working with many different datasert because the model is self contained.
+
+# 24.3.4 Time of year: an alternative approach 
+
+# In the previous section we used our domain knowledge (how the US school term affects travel) to improve the model.
+# An alternative to useing our knowledge explicitly in the model is to give the data more room to speak.
+# We could use a more flixible model and allow that ot capture the pattern we're interested in.
+# A simple linear trend isn't adequate, so we could try using a natural spline to fit a smooth curve across the year:
+library(splines)
+mod <- MASS::rlm(n ~ wday * ns(date, 5), data = daily)
+
+daily %>% 
+  data_grid(wday, date = seq_range(date, n = 13)) %>% 
+  add_predictions(mod) %>% 
+  ggplot(aes(date, pred, color = wday)) + 
+  geom_line() + 
+  geom_point()
+
+# We see a strong pattern in the numbers of Saturday flights. This is reassuring, because we alse saw that pattern in the raw data.
+# It's a good sign when you get the same signal from different approaches.
+
+# 24.3.5 Exercises 
+
+# 1. Use your Google sleuthing skills to brainstorm why there were frwer than expected flights on Jan 20, May 26, and Sep 1. 
+#    (Hint: they all have the same explanation.) How would these days generalise to another year?
+
+
+
+
+
+
+# 2. What do the three days with high positive residuals represnet?
+#    How would these days generalise to another year?
+daily %>% 
+  top_n(3, resid)
+
+
+
+
+
+# 3. Create a new variable that splits the wday variable into terms, but only for Saturdays, 
+#    i.e. it should have Thurs, Fri, but Sat-summer, Sat-spring, Sat-fall.
+#    How does this model compare with the model with every combination of wday and term?
+
+
+
+
+# 4. Create a new wday variable that combines the day of week, term (form Saturdays), and public holidays.
+#    What do the residuals of that model look like?
+
+
+
+
+
+# 5. What happens if you fit a day of week effect that varies by month(i.e n ~ wday * month)?
+#    Why is this not very helpful?
+
+
+
+
+
+
+# 6. What would you expect the model n ~ wday + ns(date, 5) to look like? 
+#    Knowing what you know about the data, why would you expect it to be not particularly effectly?
+
+
+
+
+# 7. We hypothesised that people leaving on Sundays are more likely to be business travellers who need to be somewhere on Monday.
+#    Explore that hypothesis by seeing how it breaks down based on distance and time: 
+#    if it's true, you'd expect to see more Sunday evening flights to places that are far away.
+
+
+
+
+
+# 8. It's a little frustrating that Sunday and Saturday are on separate ends of the plot.
+#    Write a small function to set the levels of the factor so that the week starts on Monday.
+
+
+
+
+# 24.4 Learning more about models
+
+# We have only scratched the absolute surface of modelling, but you have hopefully gained some simple,
+# but general-purpose tools that you can use to improve your own data analyses. 
+# It’s OK to start simple! As you’ve seen, even very simple models can make a dramatic difference in your ability to tease out interactions between variables.
+
+# These modelling chapters are even more opinionated than the rest of the book. 
+# I approach modelling from a somewhat different perspective to most others, and there is relatively little space devoted to it. 
+# Modelling really deserves a book on its own, so I’d highly recommend that you read at least one of these three books:
+# 1. Statistical Modeling: A Fresh Approach by Danny Kaplan, http://www.mosaic-web.org/go/StatisticalModeling/. 
+#    This book provides a gentle introduction to modelling, where you build your intuition, mathematical tools, and R skills in parallel.
+#    The book replaces a traditional “introduction to statistics” course, providing a curriculum that is up-to-date and relevant to data science.
+# 2. An Introduction to Statistical Learning by Gareth James, Daniela Witten, Trevor Hastie, and Robert Tibshirani, 
+#    http://www-bcf.usc.edu/~gareth/ISL/ (available online for free). 
+#    This book presents a family of modern modelling techniques collectively known as statistical learning. 
+#    For an even deeper understanding of the math behind the models, read the classic Elements of Statistical Learning by Trevor Hastie, 
+#    Robert Tibshirani, and Jerome Friedman, https://web.stanford.edu/~hastie/Papers/ESLII.pdf (also available online for free).
+# 3. Applied Predictive Modeling by Max Kuhn and Kjell Johnson, http://appliedpredictivemodeling.com. 
+#    This book is a companion to the caret package and provides practical tools for dealing with real-life predictive modelling challenges.
+
+
+
+
+
+
+
 
 
 
