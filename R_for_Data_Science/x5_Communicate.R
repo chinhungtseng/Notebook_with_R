@@ -160,6 +160,99 @@
 # The following sections dive into the three components of an R Markdown document in more details: 
 # the markdown text, the code chunks, and the YAML header.
 
+# 27.2.1 Exercises
+
+# 1. Create a new notebook using File > New File > R Notebook. Read the instructions. 
+#    Practice running the chunks. 
+#    Verify that you can modify the code, re-run it, and see modified output.
+
+## DONE
+
+# 2. Create a new R Markdown document with File > New File > R Markdown… Knit it by clicking the appropriate button. 
+#    Knit it by using the appropriate keyboard short cut. Verify that you can modify the input and see the output update.
+
+## DONE
+
+# 3. Compare and contrast the R notebook and R markdown files you created above. 
+#    How are the outputs similar? 
+#    How are they different? How are the inputs similar? How are they different? 
+#    What happens if you copy the YAML header from one to the other?
+  
+## (1) https://stackoverflow.com/questions/43820483/difference-between-r-markdown-and-r-notebook/43898504#43898504
+## (2) http://uc-r.github.io/r_notebook
+
+# 4. Create one new R Markdown document for each of the three built-in formats: HTML, PDF and Word. 
+#    Knit each of the three documents. How does the output differ? 
+#    How does the input differ? 
+#    (You may need to install LaTeX in order to build the PDF output — RStudio will prompt you if this is 
+
+# 27.3 Text formatting with Markdown
+
+# Prose in .Rmd files is writen in Markdown, a lightweight set of conventions for formatting plain text files.
+# Markdown is designed to be easy to easy to write. It is also very easy to learn.
+# The guide below shows how to use Pandoc's Markdown, a slightly extended version of Markdown that R Markdown understands.
+
+# |------------------------------------------------------------------------------------|
+# |                                                                                    |
+# | Text formatting                                                                    |
+# | ------------------------------------------------------------                       |
+# |                                                                                    |
+# |  *italic*  or _italic_                                                             |
+# |  **bold**   __bold__                                                               |
+# |  `code`                                                                            |
+# |  superscript^2^ and subscript~2~                                                   |
+# |                                                                                    |
+# |  Headings                                                                          |
+# |  ------------------------------------------------------------                      |
+# |                                                                                    |
+# |  # 1st Level Header                                                                |
+# |                                                                                    |
+# |  ## 2nd Level Header                                                               |
+# |                                                                                    |
+# |  ### 3rd Level Header                                                              |
+# |                                                                                    |
+# |  Lists                                                                             |
+# |  ------------------------------------------------------------                      |
+# |                                                                                    |
+# |  *   Bulleted list item 1                                                          |
+# |                                                                                    |
+# |  *   Item 2                                                                        |
+# |                                                                                    |
+# |     * Item 2a                                                                      |
+# |                                                                                    |
+# |     * Item 2b                                                                      |
+# |                                                                                    |
+# |  1.  Numbered list item 1                                                          |
+# |                                                                                    |
+# |  1.  Item 2. The numbers are incremented automatically in the output.              |
+# |                                                                                    |
+# |  Links and images                                                                  |
+# |  ------------------------------------------------------------                      |
+# |                                                                                    |
+# |  <http://example.com>                                                              |
+# |                                                                                    |
+# |  [linked phrase](http://example.com)                                               |
+# |                                                                                    |
+# |  ![optional caption text](path/to/img.png)                                         |
+# |                                                                                    |
+# |  Tables                                                                            |
+# |  ------------------------------------------------------------                      |
+# |                                                                                    |
+# |  First Header  | Second Header                                                     |
+# |  ------------- | -------------                                                     |
+# |  Content Cell  | Content Cell                                                      |
+# |  Content Cell  | Content Cell                                                      |
+# |                                                                                    |
+# |                                                                                    |
+# |------------------------------------------------------------------------------------|
+
+# The best way to learn these is simply to try them out. It will take a few days, 
+# but soon they will become second nature, and you won’t need to think about them. 
+# If you forget, you can get to a handy reference sheet with Help > Markdown Quick Reference.
+
+
+
+
 
 
 
