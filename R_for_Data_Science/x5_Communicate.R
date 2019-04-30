@@ -250,6 +250,122 @@
 # but soon they will become second nature, and you won’t need to think about them. 
 # If you forget, you can get to a handy reference sheet with Help > Markdown Quick Reference.
 
+# 27.3.1 Exercises
+
+# 1. Practice what you've learned by creating a brief CV. 
+#    The title should be your name, and you should include headings for (at least) education or employment.
+#    Each of the secitons should include a bulleted of jobs/degrees. Highlight the year in bold.
+
+## Done
+
+# 2. Using the R Markdown quick reference, figure out how to:
+#    (1) Add a footnote.
+#    (2) Add a horizontal rule.
+#    (3) Add a block quote.
+
+## Done
+
+# 3. Copy and paste the contents of diamond-sizes.Rmd from https://github.com/hadley/r4ds/tree/master/rmarkdown in to a local R markdown document.
+#    Check that you can run it, then add text after the frequency polygon that describes its most striking features.
+
+
+
+# 27.4 Code chunks
+
+# To run code inside an R Markdown document, you need to insert a chunk.
+# There are three ways to do so:
+# 1. The keyboard shortcut Cmd/Ctrl + Alt + I
+# 2. The "Insert" button icon in the editor toolbar.
+# 3. By manually typing the chunk delimiters ```{r} and ```.
+
+# Obvously, I'd recommend you learn the keyboard shortcut. It will save you a lot of time in the long run!
+
+# You can continue to run the code using the keyboard shortcut that by now (I hope!) you know and love: Cmd/Ctrl + Enter.
+# However, chunks get a new keyboard shortcut: Cmd/Ctrl + Shift + Enter, which runs all the code  in the chunk.
+# Think of a chunk like a function. A chunk should be relatively self-contained, and focussed around a single task.
+
+# The following sections describe the chunk header which consists of 
+# ```{r, followed by an optional chunk name, followed by comma separated options, followed by}.
+# Next comes your R code and the chunk end is indicated by a final ```.
+
+# 27.4.1 Chunk name
+
+# Chunks can be given an optional name: ``` { r by-name}. This has three advantages:
+# 1. You can more easily navigate to specific chunks using the drop-down code navigator in the bottom-left of the script editor:
+# 2. Graphics producted by the chunks will have useful names that make them easier to use elsewhere.
+#    More on that in other important options. (https://r4ds.had.co.nz/graphics-for-communication.html#other-important-options)
+# 3. You can set up networks of cached chunks to avoid re-performing expensive computations on every run. More on that below.
+
+# There is one chunk name that imbues special behaviour: setup. 
+# When you're in a notebook mode, the chunk names setup will be run automatically once, before any other code is run.
+
+# 27.4.2 Chunk options
+
+# Chunk output can be customised with options, arguments supplied to chunk header. 
+# Knitr provides almost 60 options that you can use to customize your code chunks.
+# Here we'll cover the most important chunk options that you'll ues frequently.
+# You can see the full list at http://yihui.name/knitr/options/.
+
+# The most important set of options controls if your code block is executed and what results are inserted in the finished report:
+# 1. eval = FALSE      prevent code from being evaluated. (And obviously if the code is not run, no results will be generated).
+#                      This is useful for displaying example code, or for disabling a large block of code without commenting each line.
+# 2. include = FALSE   runs the code, but doesn't show the code or results in the final document.
+#                      Use this for setup code that you don't want cluttering your report.
+# 3. echo = FALSE      prevents code, but not the result from appearing in the finished file.
+#                      Use this when writing reports aimed at people who don't want cluttering your report.
+# 4. message = FALSE   or warning = FALSE prevents messages or warnings from appearing in the finished file.
+# 5. results = 'hide'  hides printed output; fig.show = 'hide' hides plots.
+# 6. error = TRUE      cause the render to continue even if code returns an error. 
+#                      This is rarely something you;ll want ot include in the final version of your report, 
+#                      but can be very useful if you need to debug exactly what is going on inside your .Rmd.
+#                      It's also useful if you're teaching R and want to dliberately include an error.
+#                      The default, error = FALSE causes knitting to fail if there is a single error in the document.
+
+# The following table summarises which types of output each option supressess:
+# |-------------------|----------|-----------|--------|-------|----------|----------|
+# | Option            | Run code | Show code | Output | Plots | Messages | Warnings |
+# |-------------------|----------|-----------|--------|-------|----------|----------|
+# | eval = FALSE      |    v     |           |    v   |   v   |     v    |     v    |
+# |                   |          |           |        |       |          |          |
+# | include = FALSE   |          |     v     |    v   |   v   |     v    |     v    |
+# |                   |          |           |        |       |          |          |
+# | echo = FALSE      |          |     v     |        |       |          |          |
+# |                   |          |           |        |       |          |          |
+# | results = "hide"  |          |           |    v   |       |          |          | 
+# |                   |          |           |        |       |          |          |
+# | fig.show = "hide" |          |           |        |   v   |          |          |
+# |                   |          |           |        |       |          |          |
+# | message = FALSE   |          |           |        |       |     v    |          |
+# |                   |          |           |        |       |          |          |
+# | warning = FALSE   |          |           |        |       |          |    v     |
+# |-------------------|----------|-----------|--------|-------|----------|----------|
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

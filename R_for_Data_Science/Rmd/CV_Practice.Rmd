@@ -1,0 +1,75 @@
+---
+title: "CV"
+output: html_notebook
+---
+
+# Chin Hun Tseng
+
+Passing for learning new technologies.
+
+*   <https://github.com/chinhungtseng>
+*   <https://www.linkedin.com/in/chinhungtseng>
+
+Interests: Data Analyst / Data Engineer
+Taipei , Taiwan +886 934257327 bluesshown@gmail.com
+
+## Skills
+
+-----
+
+### Programming
+
+Languages 
+
+*  R
+*  Java
+*  Shell script
+
+Database Systems
+
+*  MSSQL
+
+Operating Systems 
+
+*  MacOs
+*  Windows
+*  Linux (Ubuntu)
+
+Big Data Ecosystem 
+
+*  Hadoop
+*  Spark
+
+Microsoft Office 
+
+*  Excel
+*  PowerPoint
+
+Data Visualization BI Tools 
+
+*  MS Power BI
+
+### Languages
+*   Chinese (Native speaker)
+*   English (Intermediate)
+
+## Work Experience
+
+-----
+
+__Far Eastern Department Store, Business Supervisor, Oct 2015 ~ Sep 2018__
+
+*  Manage and direct promo a number of campaigns for the store. Approach and solve problem for client . 
+*  Project management abilities, make decisions for the sales team.
+*  Plan and execute various marketing activities.
+*  Provide a consultation service for customers
+*  Capable of delivering quick solutions for the marketing troubles.
+
+## Education
+
+-----
+
+*  Institute for Information Industry (資策會), Data Engineering Program, __2018/10 ~ 2019/03__   
+   Team project website: [bdseteam1.github.io](https://bdseteam1.github.io)
+   
+*  National Chiayi University, Bachelor’s Degree, Department of Wood-Based Materials and Design, __2010 ~ 2014__
