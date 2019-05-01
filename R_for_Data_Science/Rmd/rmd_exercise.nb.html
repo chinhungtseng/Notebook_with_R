@@ -313,9 +313,9 @@ $(document).ready(function () {
 <h2>R Code Blocks</h2>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc3VtbWFyeShjYXJzJGRpc3QpXG5zdW1tYXJ5KGNhcnMkc3BlZWQpXG5gYGAifQ== -->
-<pre class="r"><code>summary(cars$dist)
-summary(cars$speed)</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuc3VtbWFyeShjYXJzJGRpc3QpXG5zdW1tYXJ5KGNhcnMkc3BlZWQpXG5gYGBcbmBgYCJ9 -->
+<p><code>r</code>r summary(cars<span class="math inline">\(dist) summary(cars\)</span>speed)</p>
+<pre><code></code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
@@ -344,10 +344,132 @@ summary(cars$speed)</code></pre>
 <hr />
 <p>The best way to learn these is simply to try them out. It will take a few days, but soon they will become second nature, and you won’t need to think about them. If you forget, you can get to a handy reference sheet with Help &gt; Markdown Quick Reference.</p>
 <!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoic3VtbWFyeShkaWFtb25kcykifQ== -->
+<pre class="r"><code>summary(diamonds)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubXRjYXJzWzE6NSwgXVxuYGBgIn0= -->
+<pre class="r"><code>mtcars[1:5, ]</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbImRhdGEuZnJhbWUiXSwibmNvbCI6MTEsIm5yb3ciOjV9LCJyZGYiOiJINHNJQUFBQUFBQUFBM1ZTTzAvRE1CZzBhVUpwS2dxb0N4UEt5RUpGV3g0VHdrTUhGZ1pnb0JJc2JoSktST3NZeHltUGlZV1pQOEFHLzRDRm1SbG1WbllXRmhnQkovRVhOUlo4a24zbjgxaytQM1k3M1piZHRSRkNCaXBaQmpKS2twcUc3Q2FRaVNvSm5pTlVxa3RTbGEwbW00VlhVVm81cmowbjlZSlhqOUxDcllkMlVybC9YdmtBWjdXeGc2QXl2NmQwd0FPRkxEUGkwVlhSZjNDbGZBcjNjWEhzdnhYOU0ybThkbzQxbFgvcTd0WGVZUGU0MGk3bU56K2ZiZzRYdjNCWjVURGtTRXE0OHJqemZyM3dpS3V5a3l6M0w4ZVp2Mm1sT203ZEp2WkQzR2JKQnFlZ2d4OXB0ZmxSeExGSy9mcjhINzdpZVdkVmJoMm5pdmlmWDk4SDUvYkNSN0VvR2ZxUkpNbXlxaEpMUTlZSDZsNE1GRFc5SUdLS0c4Y3NWemtSb0o0Qk0wOGozd1YxRkFFalE1anYrNFFEZHdudmFiRXFQRHhyakVlellHS2JYSHJFMmUydUtHRTZGNXg5QXFudERoRlJUSjMxNXJKU2Fsc2hwNzV3VnB3T0QwYStVdWVVdXNkQ0xrZ3ZqSVYrUGU2QVJKQUJSTnNqZ2pTT3VJd25SOS9ha25MSVJCQlN1Y2lvbyt5ampDK2U0Sm93RTlQa29ONlNleHpUazZWbXNrRTZuYlZwaGRZWXIyWmJHai9hNVV6NnRCOVFPSncxSUQwZkhxOG1MelM5endiakFZVm5zcVVhTlVRb0NQaHNOeHlBa3A0TmZmOENNSENHaUc0RUFBQT0ifQ== -->
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["mpg"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["cyl"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["disp"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["hp"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["drat"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["wt"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["qsec"],"name":[7],"type":["dbl"],"align":["right"]},{"label":["vs"],"name":[8],"type":["dbl"],"align":["right"]},{"label":["am"],"name":[9],"type":["dbl"],"align":["right"]},{"label":["gear"],"name":[10],"type":["dbl"],"align":["right"]},{"label":["carb"],"name":[11],"type":["dbl"],"align":["right"]}],"data":[{"1":"21.0","2":"6","3":"160","4":"110","5":"3.90","6":"2.620","7":"16.46","8":"0","9":"1","10":"4","11":"4","_rn_":"Mazda RX4"},{"1":"21.0","2":"6","3":"160","4":"110","5":"3.90","6":"2.875","7":"17.02","8":"0","9":"1","10":"4","11":"4","_rn_":"Mazda RX4 Wag"},{"1":"22.8","2":"4","3":"108","4":"93","5":"3.85","6":"2.320","7":"18.61","8":"1","9":"1","10":"4","11":"1","_rn_":"Datsun 710"},{"1":"21.4","2":"6","3":"258","4":"110","5":"3.08","6":"3.215","7":"19.44","8":"1","9":"0","10":"3","11":"1","_rn_":"Hornet 4 Drive"},{"1":"18.7","2":"8","3":"360","4":"175","5":"3.15","6":"3.440","7":"17.02","8":"0","9":"0","10":"3","11":"2","_rn_":"Hornet Sportabout"}],"options":{"columns":{"min":{},"max":[10],"total":[11]},"rows":{"min":[10],"max":[10],"total":[5]},"pages":{}}}
+  </script>
+</div>
+<!-- rnb-frame-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+
+<!-- rnb-html-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbImtuaXRfYXNpcyJdLCJzaXppbmdQb2xpY3kiOltdfX0= -->
+
+<table>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">mpg</th>
+<th align="right">cyl</th>
+<th align="right">disp</th>
+<th align="right">hp</th>
+<th align="right">drat</th>
+<th align="right">wt</th>
+<th align="right">qsec</th>
+<th align="right">vs</th>
+<th align="right">am</th>
+<th align="right">gear</th>
+<th align="right">carb</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Mazda RX4</td>
+<td align="right">21.0</td>
+<td align="right">6</td>
+<td align="right">160</td>
+<td align="right">110</td>
+<td align="right">3.90</td>
+<td align="right">2.620</td>
+<td align="right">16.46</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">4</td>
+<td align="right">4</td>
+</tr>
+<tr class="even">
+<td align="left">Mazda RX4 Wag</td>
+<td align="right">21.0</td>
+<td align="right">6</td>
+<td align="right">160</td>
+<td align="right">110</td>
+<td align="right">3.90</td>
+<td align="right">2.875</td>
+<td align="right">17.02</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">4</td>
+<td align="right">4</td>
+</tr>
+<tr class="odd">
+<td align="left">Datsun 710</td>
+<td align="right">22.8</td>
+<td align="right">4</td>
+<td align="right">108</td>
+<td align="right">93</td>
+<td align="right">3.85</td>
+<td align="right">2.320</td>
+<td align="right">18.61</td>
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">4</td>
+<td align="right">1</td>
+</tr>
+<tr class="even">
+<td align="left">Hornet 4 Drive</td>
+<td align="right">21.4</td>
+<td align="right">6</td>
+<td align="right">258</td>
+<td align="right">110</td>
+<td align="right">3.08</td>
+<td align="right">3.215</td>
+<td align="right">19.44</td>
+<td align="right">1</td>
+<td align="right">0</td>
+<td align="right">3</td>
+<td align="right">1</td>
+</tr>
+<tr class="odd">
+<td align="left">Hornet Sportabout</td>
+<td align="right">18.7</td>
+<td align="right">8</td>
+<td align="right">360</td>
+<td align="right">175</td>
+<td align="right">3.15</td>
+<td align="right">3.440</td>
+<td align="right">17.02</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">3</td>
+<td align="right">2</td>
+</tr>
+</tbody>
+</table>
+
+
+<!-- rnb-html-end -->
+
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
 </div>
 </div>
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAiUiBOb3RlYm9vayIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKVGV4dCBmb3JtYXR0aW5nCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCippdGFsaWMqIG9yIF9pdGFsaWNfCioqYm9sZCoqIG9yIF9fYm9sZF9fCmBjb2RlYApzdXBlcnNjcmlwdF4yXiBhbmQgc3Vic2NyaXB0fjJ+CgpIZWFkaW5ncwotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCgojIDFzdCBMZXZlbCBIZWFkZXIKCiMjIDJuZCBMZXZlbCBIZWFkZXIKCiMjIyAzcmQgTGV2ZWwgSGVhZGVyCgpMaXN0cwotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCgoqICAgQnVsbGV0ZWQgbGlzdCBpdGVtIDEKCiogICBJdGVtIDIKICAgICogICBJdGVtIDJhCiAgICAqICAgSXRlbSAyYgoKMS4gIE51bWJlcmVkIGxpc3QgaXRlbSAxCgoxLiBJdGVtIDIuIFRoZSBudW1iZXJzIGFyZSBpbmNyZW1lbnRlZCBhdXRvbWF0aWNhbGx5IGluIHRoZSBvdXRwdXQuCgpMaW5rcyBhbmQgSW1hZ2VzCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCjxodHRwOi8vZXhhbXBsZS5jb20+CgpbbGlua2VkIHBocmFzZV0oaHR0cDovL2V4YW1wbGUuY29tKQoKQXQgdGhlIGJvdHRvbSBvZiB0aGUgZG9jdW1lbnQ6CltpZF06IGh0dHA6Ly9leGFtcGxlLmNvbS8gIlRpdGxlIgoKIVtvcHRpb25hbCBjYXB0aW9uIHRleHRdKC4uL1JfZm9yX0RhdGFfU2NpZW5jZS9kYXRhLXNjaWVuY2Utd3JhbmdsZS5wbmcpCgpUYWJsZXMKLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKRmlyc3QgSGVhZGVyIHwgU2Vjb25kIEhlYWRlcgotLS0tLS0tLS0tLS0gfCAtLS0tLS0tLS0tLS0tCkNvbnRlbnQgQ2VsbCB8IENvbnRlbnQgQ2VsbApDb250ZW50IENlbGwgfCBDb250ZW50IENlbGwKCkJsb2NrcXVvdGUKLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKQSBmcmllbmQgb25jZSBzYWlkOgo+IEl0J3MgYWx3YXlzIGJldHRlciB0byBnaXZlCj4gdGhlbiB0byByZWNlaXZlLgoKUiBDb2RlIEJsb2NrcwotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCmBgYHtyfQpzdW1tYXJ5KGNhcnMkZGlzdCkKc3VtbWFyeShjYXJzJHNwZWVkKQpgYGAKCklubGluZSBSIENvZGUgCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KClRoZXJlIHdlcmUgYHIgbnJvdyhjYXJzKWAgY2FycyBzdHVkaWVkCgpQbGFpbiBDb2RlIEJsb2NrcwotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCgpQbGFpbiBjb2RlIGJsb2NrcyBhcmUgZGlzcGxheWVkIGluIGEgZml4ZWQtd2lkdGggZm9udCBidXQgbm90IGV2YXVsYXRlZApgYGAKVGhpcyB0ZXh0IGlzIGRpc3BsYXllZCB2ZXJiYXRpbSAvIHByZWZvcm1hdHR0ZWQKYGBgCklubGluZSBDb2RlCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCldlIGRlZmluZWQgdGhlIGBhZGRgIGZ1bmN0aW9uIHRvIGNvbXB1dGUgdGhlIHN1bSBvZiB0d28gbnVtYmVycy4KCkxhVGV4IEVxdWF0aW9ucwotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCklubGluZSBFcXVhdGlvbgokZXF1YXRpb24kCgpEaXNwbGF5IEVxdWF0aW9uCiQkIGVxdWF0aW9uICQkCgpIb3Jpem9udGFsIFJ1bGwgLyBQYWdlIEJyZWFrCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCioqKioqKgoKLS0tLS0tLQoKCgoKVGhlIGJlc3Qgd2F5IHRvIGxlYXJuIHRoZXNlIGlzIHNpbXBseSB0byB0cnkgdGhlbSBvdXQuIEl0IHdpbGwgdGFrZSBhIGZldyBkYXlzLCAKYnV0IHNvb24gdGhleSB3aWxsIGJlY29tZSBzZWNvbmQgbmF0dXJlLCBhbmQgeW91IHdvbid0IG5lZWQgdG8gdGhpbmsgYWJvdXQgdGhlbS4KSWYgeW91IGZvcmdldCwgeW91IGNhbiBnZXQgdG8gYSBoYW5keSByZWZlcmVuY2Ugc2hlZXQgd2l0aCBIZWxwID4gTWFya2Rvd24gUXVpY2sgUmVmZXJlbmNlLgoKCgoKCgoKCgoKCgoKCgoK</div>
+<div id="rmd-source-code">LS0tCnRpdGxlOiAiUiBOb3RlYm9vayIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKVGV4dCBmb3JtYXR0aW5nCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCippdGFsaWMqIG9yIF9pdGFsaWNfCioqYm9sZCoqIG9yIF9fYm9sZF9fCmBjb2RlYApzdXBlcnNjcmlwdF4yXiBhbmQgc3Vic2NyaXB0fjJ+CgpIZWFkaW5ncwotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCgojIDFzdCBMZXZlbCBIZWFkZXIKCiMjIDJuZCBMZXZlbCBIZWFkZXIKCiMjIyAzcmQgTGV2ZWwgSGVhZGVyCgpMaXN0cwotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCgoqICAgQnVsbGV0ZWQgbGlzdCBpdGVtIDEKCiogICBJdGVtIDIKICAgICogICBJdGVtIDJhCiAgICAqICAgSXRlbSAyYgoKMS4gIE51bWJlcmVkIGxpc3QgaXRlbSAxCgoxLiBJdGVtIDIuIFRoZSBudW1iZXJzIGFyZSBpbmNyZW1lbnRlZCBhdXRvbWF0aWNhbGx5IGluIHRoZSBvdXRwdXQuCgpMaW5rcyBhbmQgSW1hZ2VzCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCjxodHRwOi8vZXhhbXBsZS5jb20+CgpbbGlua2VkIHBocmFzZV0oaHR0cDovL2V4YW1wbGUuY29tKQoKQXQgdGhlIGJvdHRvbSBvZiB0aGUgZG9jdW1lbnQ6CltpZF06IGh0dHA6Ly9leGFtcGxlLmNvbS8gIlRpdGxlIgoKIVtvcHRpb25hbCBjYXB0aW9uIHRleHRdKC4uLy4uL1JfZm9yX0RhdGFfU2NpZW5jZS9kYXRhLXNjaWVuY2Utd3JhbmdsZS5wbmcpCgpUYWJsZXMKLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKRmlyc3QgSGVhZGVyIHwgU2Vjb25kIEhlYWRlcgotLS0tLS0tLS0tLS0gfCAtLS0tLS0tLS0tLS0tCkNvbnRlbnQgQ2VsbCB8IENvbnRlbnQgQ2VsbApDb250ZW50IENlbGwgfCBDb250ZW50IENlbGwKCkJsb2NrcXVvdGUKLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKQSBmcmllbmQgb25jZSBzYWlkOgo+IEl0J3MgYWx3YXlzIGJldHRlciB0byBnaXZlCj4gdGhlbiB0byByZWNlaXZlLgoKUiBDb2RlIEJsb2NrcwotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCmBgYHtyfQpzdW1tYXJ5KGNhcnMkZGlzdCkKc3VtbWFyeShjYXJzJHNwZWVkKQpgYGAKCklubGluZSBSIENvZGUgCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KClRoZXJlIHdlcmUgYHIgbnJvdyhjYXJzKWAgY2FycyBzdHVkaWVkCgpQbGFpbiBDb2RlIEJsb2NrcwotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCgpQbGFpbiBjb2RlIGJsb2NrcyBhcmUgZGlzcGxheWVkIGluIGEgZml4ZWQtd2lkdGggZm9udCBidXQgbm90IGV2YXVsYXRlZApgYGAKVGhpcyB0ZXh0IGlzIGRpc3BsYXllZCB2ZXJiYXRpbSAvIHByZWZvcm1hdHR0ZWQKYGBgCklubGluZSBDb2RlCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCldlIGRlZmluZWQgdGhlIGBhZGRgIGZ1bmN0aW9uIHRvIGNvbXB1dGUgdGhlIHN1bSBvZiB0d28gbnVtYmVycy4KCkxhVGV4IEVxdWF0aW9ucwotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCklubGluZSBFcXVhdGlvbgokZXF1YXRpb24kCgpEaXNwbGF5IEVxdWF0aW9uCiQkIGVxdWF0aW9uICQkCgpIb3Jpem9udGFsIFJ1bGwgLyBQYWdlIEJyZWFrCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCioqKioqKgoKLS0tLS0tLQoKCgoKVGhlIGJlc3Qgd2F5IHRvIGxlYXJuIHRoZXNlIGlzIHNpbXBseSB0byB0cnkgdGhlbSBvdXQuIEl0IHdpbGwgdGFrZSBhIGZldyBkYXlzLCAKYnV0IHNvb24gdGhleSB3aWxsIGJlY29tZSBzZWNvbmQgbmF0dXJlLCBhbmQgeW91IHdvbid0IG5lZWQgdG8gdGhpbmsgYWJvdXQgdGhlbS4KSWYgeW91IGZvcmdldCwgeW91IGNhbiBnZXQgdG8gYSBoYW5keSByZWZlcmVuY2Ugc2hlZXQgd2l0aCBIZWxwID4gTWFya2Rvd24gUXVpY2sgUmVmZXJlbmNlLgoKCgpgYGB7ciwgZXZhbCA9IEZBTFNFfQpzdW1tYXJ5KGRpYW1vbmRzKQpgYGAKCgpgYGB7cn0KbXRjYXJzWzE6NSwgXQpgYGAKCgpgYGB7cn0Ka25pdHI6OmthYmxlKAogIG10Y2Fyc1sxOjUsIF0sCiAgY2FwdGlvbiA9ICJBIGtuaXRyIGthYmxlLiIKKQpgYGAKCgoKCgoKCgoK</div>
 
 
 

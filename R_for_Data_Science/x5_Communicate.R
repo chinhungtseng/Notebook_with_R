@@ -340,38 +340,591 @@
 # | warning = FALSE   |          |           |        |       |          |    v     |
 # |-------------------|----------|-----------|--------|-------|----------|----------|
 
+# 27.4.3 Table
+
+# By defualt, R Markdown prints data frames and matrices as you'd see them in the console:
+mtcars[1:5, ]
+
+# If you prefer that data be displayed with additional formatting you can use the knitr::kable function.
+# The code below generates Table 27.1.
+
+knitr::kable(
+  mtcars[1:5, ],
+  caption = "A knitr kable."
+)
+
+#                                 Table 27.1: A knitr kable.
+#  |                  |  mpg| cyl| disp|  hp| drat|    wt|  qsec| vs| am| gear| carb|
+#  |:-----------------|----:|---:|----:|---:|----:|-----:|-----:|--:|--:|----:|----:|
+#  |Mazda RX4         | 21.0|   6|  160| 110| 3.90| 2.620| 16.46|  0|  1|    4|    4|
+#  |Mazda RX4 Wag     | 21.0|   6|  160| 110| 3.90| 2.875| 17.02|  0|  1|    4|    4|
+#  |Datsun 710        | 22.8|   4|  108|  93| 3.85| 2.320| 18.61|  1|  1|    4|    1|
+#  |Hornet 4 Drive    | 21.4|   6|  258| 110| 3.08| 3.215| 19.44|  1|  0|    3|    1|
+#  |Hornet Sportabout | 18.7|   8|  360| 175| 3.15| 3.440| 17.02|  0|  0|    3|    2|
+
+# Read the documentation for ?knitr::kable to see the other ways in which you can customise the table.
+# For even deeper customisation, consider the xtable, stargazer, pander, tables, and ascii packages.
+# Each provides a set of tools for returning formatted tables from R code.
+
+# There is also a rich set of options for controlling how figures are embedded.
+# You'll learn about there in saving your plots. (https://r4ds.had.co.nz/graphics-for-communication.html#saving-your-plots)
+
+# 27.4.4 Caching 
+
+# Normally, each knit of a document starts from a completely clean slate.
+# This is great for reproducibility, because it ensures that you've captured every important computation in code.
+# However, it can be painful if you have some computations that take a long time. The solution is cache = TRUE.
+# When set, this will save the output of the chunk to a specially named file on disk.
+# On subsequent runs, knitr will check to see if the code has changed, and if it hasn't, it will reuse the cached results.
+
+# The caching system must be used with care, because by default it is based ont the code only, not its dependencies.
+# For example, here the precessed_data chunk depends on the raw_data chunk:
+
+# |-----------------------------------------------------------------------|
+# |                                                                       | 
+# |      ```{r raw_data}                                                  |
+# |      rawdata <- readr::read_csv("a_very_large_file.csv")              |
+# |      ```                                                              |
+# |                                                                       | 
+# |      ```{r processed_data, cache = TRUE}                              |
+# |      processed_data <- rawdata %>%                                    |
+# |       filter(!is.na(import_var)) %>%                                  |
+# |       mutate(new_variable = complicated_transformation(x, y, z))      |
+# |      ```                                                              |
+# |                                                                       | 
+# |-----------------------------------------------------------------------|
+
+# Caching the processed_data chunk means that it will get re-run if th edplyr pipeline is changed, 
+# but it won't get rerun if the read_csv() call changes.
+# You can avoid that problem with the dependson chunk option:
+
+# |-----------------------------------------------------------------------|
+# |                                                                       | 
+# |     ```{r processed_data, cache = TRUE, dependson = "raw_data"}       |
+# |     processed_data <- rawdata %>%                                     |
+# |       filter(!is.na(import_var)) %>%                                  |
+# |       mutate(new_variable = complicated_transformation(x, y, z))      |
+# |     ```                                                               |
+# |                                                                       | 
+# |-----------------------------------------------------------------------|
+
+# dependson should contain a character vector of every chunk that cached chunk depends on.
+# Knitr will update the results for the cached chunk whenever it detects that one of its dependencies have changed.
+
+# Note that chunks won't update if a_very_large_file.csv changes, because knitr caching only tracks changes within the .Rmd file.
+# If you want to also track changes to that file you can use the cache.extra option.
+# This is an arbitrary R expression that will invalidate the cache whenever it changes.
+# A good function to use is file.info(): it returns a bunch of information about the file including when it was last modefied. 
+# Then you can write:
+
+# |-----------------------------------------------------------------------|
+# |    ```{r raw_data, cache.extra = file.info("a_very_large_file.csv")}  |
+# |    rawdata <- readr::read_csv("a_very_large_file.csv")                |
+# |    ```                                                                |
+# |-----------------------------------------------------------------------|
+
+# As your caching strategies get progressively more complicated, 
+# it's a good idea to regularly clear out al your caches with knitr::clean_cache().
+
+# I've used the advice of David Robinson to name these chunks: each chunk is named after the primary object that it creates.
+# This makes it easier to understand the dependson specification.
+# (https://twitter.com/drob/status/738786604731490304)
+
+# 27.4.5 Global options
+
+# As you work more with knitr, you will discover that some of the default chunk options don't fit your needs and you want to cgabge them.
+# You can do this by calling knitr::opts_chunk$set() in a code chunk.
+# For example, when writing books and tutorials I set:
+knitr::opts_chunk$set(
+  comment = "#>",
+  collapse = TRUE
+)
+
+# This uses my prefered comment formatting, and ensures that the code and output are kept closely entwined.
+# On the other hand, if you were preparing a report, you might set:
+knitr::opts_chunk$set(
+  echo = FALSE
+)
+
+# That will hide the code by default, so only showing the chunks you deliberately choose to show (with echo = TRUE).
+# You might consider setting message = FALSE and warning = FALSE,
+# but that would makd it harder to debug problems because you wouldn't see any messages in the final document.
+
+# 27.4.6 Inline code 
+
+# There is on eother way to embed R code into an R Marksown document: directly into the text, with: `r`.
+# This can be very useful if you mention properties of your data in the text.
+# For example, in the example document I used at the start of the chapter I had:
+
+## We have data about `r nrow(diamonds)` diamonds. Only `r nrow(diamonds) - nrow(smaller)` are larger than 2.5 carats. 
+## The distribution of the remainder is shown below:
+
+# When the report is knit, the results of these computations are inserted into the text:
+
+## We have data about 53949 diamonds. Only 126 are larger than 2.5 carats.
+## The distribution of th eremainder is shown below:
+
+# When inserting numbers into text, format() is your friend.
+# It allows you to set the number of digits so you don't print to a riduculous degree of accuracy, 
+# and a bid.mark to make numbers easier to read. I'll often combine these into a helper function:
+comma <- function(x) format(x, digits = 2, big.mark = ",")
+comma(3452345)
+comma(.12358124331)
+
+# 27.4.7 Exercises
+
+# 1. Add a section that explores how diamond sizes vary by cut, colour, and clarity.
+#    Assume you're writing a report for someone who doesn't know R, 
+#    and instead of setting echo = FALSE on each chunk, set a global option.
+
+
+
+
+# 2. Download diamond-sizes.Rmd from https://github.com/hadley/r4ds/tree/master/rmarkdown.
+#    Add a section that describes the largest 20 diamonds, including a table that displays their most important attributes.
+
+
+
+
+# 3. Modify daimonds-size.Rmd to use comma() to produce nicely formatted output.
+#    Also include the percentage fo diamonds that are larger than 2.5 carats.
+
+
+
+
+# 4. Set up a network of chunks where d depends on c and b, and both b and c depend on a.
+#    Have each chunk print lubridate::now(), set cache = TRUE, then verufy your nuderstanding of caching.
 
 
 
 
 
 
+# 27.5 Troubleshooting 
+
+# Troubleshooting R Markdown documents can be challenging because you are no longer in an interactive R environment, and you need to learn some new tricks.
+# The first thing you should always try is to recreate the problem in an interactive session.
+# Restart R, then "Run all chunks" (either from Code menu, under Run region), or with the keyboard shortcut Ctrl + Alt + R.
+# If you're lucky, that will recreate the problem, and you cna figure out what's going on interactively.
+
+# If that doesn't help, there must be something defferent between your interactive environment and the R markdown environment.
+# You're going to need to systematically explore the options.
+# The most common difference is the working directory: the working directory of an R Markdown is the directory in which it lives.
+# Check the working directory is what you expect by including getwd() in a chunk.
+
+# Next, brainstorm all the things that might cause the bug. 
+# You'll need to systematically check that they're the same in your R session and your R markdown session.
+# The easiest way to do that is to set error = TRUE on the chunk causing the problem, 
+# then use print() and str() to check that settings are as you expect.
+
+# 27.6 YANL header 
+
+# You can control many other "whole document" settings by tweading the parameters of the YAML header.
+# You might wonder what YAML stands for: it's "yet another markup language", 
+# which is designed for representing hierarchicaldata in a way that's easy for humans to read and write.
+# R Markdown uses it to control many details of the output.
+# Here we'll discuss two: document parameters and bibliographies.
+
+# 27.6.1 Parameters
+
+# R Markdown documents can include one or more parameters whose values can be set when you render the report.
+# Parameters are useful when you want to re-render the same report with distinct values for various key inputs.
+# For example, you might be producing sales reports per branch, exam results by student, or demographic summaries by country.
+# To declare one or more parameters, use the params field.
+
+# This example uses a my_class parameter to determine which class of cars to display:
+
+# |-----------------------------------------------------------------------|
+# |      ---                                                              |
+# |      output: html_document                                            |
+# |      params:                                                          |
+# |        my_class: "suv"                                                |
+# |      ---                                                              |
+# |      ---                                                              |
+# |       ```{r setup, include = FALSE}                                   |
+# |      library(ggplot2)                                                 |
+# |      library(dplyr)                                                   |
+# |                                                                       |
+# |      class <- mpg %>% filter(class == params$my_class)                |
+# |      ```                                                              |
+# |                                                                       |
+# |      # Fuel economy for `r params$my_class`s                          |
+# |                                                                       |                          
+# |      ```{r, message = FALSE}                                          |     
+# |      ggplot(class, aes(displ, hwy)) +                                 |
+# |        geom_point() +                                                 |  
+# |        geom_smooth(se = FALSE)                                        | 
+# |      ```                                                              | 
+# |-----------------------------------------------------------------------|
+
+# As you can see, parameters are available within the code chunks as a read-only list named params.
+
+# You can write atomic vectors directly into the YAML header.
+# You can also run arbitrary R expressions by prefacing the parameter value with !r.
+# This is a good way to specify date/time parameters.
+
+# |-----------------------------------------------------------------------|
+# |                                                                       |
+# |     params:                                                           |
+# |       start: !r lubridate::ymd("2015-01-01")                          |
+# |       snapshot: !r lubridate::ymd_hms("2015-01-01 12:30:00")          |
+# |                                                                       |
+# |-----------------------------------------------------------------------|
+
+# In RStudio, you can click the "Knit with Parameters" option in the Knit dropdown menu to set parameters, 
+# render. and preview the report in a single user friendly step.
+# You can customise the dialog by setting other options in the header. 
+# See http://rmarkdown.rstudio.com/developer_parameterized_reports.html#parameter_user_interfaces for more details.
+
+# Alternatively, if you need to produce many such parameterised reports, you can call rmarkdown::render() with a list of params:
+
+rmarkdown::render("fuel-economy.Rmd", params = list(my_class = "suv"))
+
+# This is particularly powerful in conjunction with purrr::pwalk().
+# The following example creates a report for each value of class found in mpg.
+# First we create a frame that has one row for each class, giving the filename of the report and the params:
+reports <- tibble(
+  class = unique(mpg$class),
+  filename = stringr::str_c("fuel-economy", class, ".html"),
+  params = purrr::map(class, ~ list(my_class = .))
+)
+reports
+
+# Then we match the column names to the argument names of render(), and use purrr's parallel walk to call render() once for each row:
+reports %>% 
+  select(output_file = filename, params) %>% 
+  purrr::pwalk(rmarkdown::render, input = "./R_for_Data_Science/Rmd/fuel-economy.Rmd")
+
+# 27.6.2 Bibliographies and Citations 
+
+# Pandoc can automatically generate citations and a bibliography in a number of styles.
+# To use this feature, specify a bibliography file using the bibliography field in your file's header.
+# The field should contain a path from the directory that contains your.
+# Rmd file to the file that contains the bibliography file:
+
+bibliography: rmarkdown.bib
+
+# You can use many common bibliography formats including BibLaTeX, BibTeX, endnote, medline.
+
+# To create a citation within your .Rmd file, use a key composed of '@' + the citation identifier from the bibliography file.
+# Then place the citation in square brackets. Here are some examples:
+
+# |-------------------------------------------------------------------------------|
+# |                                                                               |
+# |     Separate multiple citations with a `;`: Blah blah [@smith04; @doe99].     |
+# |                                                                               |
+# |     You can add arbitrary comments inside the square brackets:                |
+# |     Blah blah [see @doe99, pp. 33-35; also @smith04, ch. 1].                  |
+# |                                                                               |
+# |     Remove the square brackets to create an in-text citation: @smith04        |
+# |     says blah, or @smith04 [p. 33] says blah.                                 |
+# |                                                                               |
+# |     Add a `-` before the citation to suppress the author's name:              |
+# |     Smith says blah [-@smith04].                                              |
+# |                                                                               |
+# |-------------------------------------------------------------------------------|
+
+# When R Markdown renders your file, it will build and append a bibliography to the end of your document.
+# The bibliography will contain each of the cited references from your bibliography file, but it will not contain a section deading.
+# As a result it is common pracitce to end your file with a section header for the bibliography, such as # References or # Bibliography.
+
+# You can change the style of your citations and bibliography by referencing a CSL (citation style language) file in the csl field:
+bibliography: rmarkdown.bib
+csl: apa.csl
+
+# As with the bibliography field, your csl file should contain a path to the file.
+# Here I assume that the csl file is in the same directory as the .Rmd file.
+# A good place to find CSL style files for common bibliography styles is http://github.com/citation-style-language/styles.
+
+# 27.7 Learning more 
+
+# R Markdown is still relatively young, and is still growing rapidly.
+# The best place to stay on top of innovation is the official R Markdown website: http://rmarkdown.rstudio.com.
+
+# There are two important topics that we haven't covered here: 
+# collaboation, and the details of accurately communication your ideas to other humans.
+# Colalboration is a vital part of modern data science, 
+# and you can make your life much easier by using version control tools, like Git and Github.
+# We recommend two free resources that will teach you about Git:
+
+# 1. "Happy git with R": a user friendly introduction to Git and GitHub from R users, by Jenny Bryan.
+#     The book is freely available online: http://happygitwithr.com
+# 2. The "Git and GitHub" chapter of R Packages, by Hadley.
+#    You can also read it for free online: http://r-pkgs.had.co.nz/git.html.
+
+# I have also not touched on what you should actually write in order to cleaerly communicate the results of your analysis.
+# To imporve your writing, I highly recommend reading either:Style: 
+# Lessons in Clarity and Grace by Joseph M. Williams & Joseph Bizup (https://amzn.com/0134080416), 
+# or The Sense of Structure: Writing from the Reader’s Perspective by George Gopen (https://amzn.com/0205296327).
+# Both books will help you understand the structure of sentences and paragraphs, and give you the tools to make your writing more clear. 
+# (These books are rather expensive if purchased new, but they’re used by many English classes so there are plenty of cheap second-hand copies). 
+# George Gopen also has a number of short articles on writing at https://www.georgegopen.com/the-litigation-articles.html. 
+# They are aimed at lawyers, but almost everything applies to data scientists too.
+
+# ----------------------------------------------------------------------------------------------------------------------------
+
+# 28 Graphics for communication
+
+# 28.1 Introduction
+
+# In exploratory data analysis, you learned how to use plots as tools for exploration. 
+# When you make exploratory plots, you know—even before looking—which variables the plot will display. 
+# You made each plot for a purpose, could quickly look at it, and then move on to the next plot. 
+# In the course of most analyses, you’ll produce tens or hundreds of plots, most of which are immediately thrown away.
+
+# Now that you understand your data, you need to communicate your understanding to others. 
+# Your audience will likely not share your background knowledge and will not be deeply invested in the data. 
+# To help others quickly build up a good mental model of the data, 
+# you will need to invest considerable effort in making your plots as self-explanatory as possible.
+# In this chapter, you’ll learn some of the tools that ggplot2 provides to do so.
+
+# This chapter focuses on the tools you need to create good graphics. 
+# I assume that you know what you want, and just need to know how to do it. 
+# For that reason, I highly recommend pairing this chapter with a good general visualisation book. 
+# I particularly like The Truthful Art, by Albert Cairo. 
+# It doesn’t teach the mechanics of creating visualisations, but instead focuses on what you need to think about in order to create effective graphics.
+
+# 28.1.1 Prerequisites
+
+# In this chapter, we’ll focus once again on ggplot2.
+# We’ll also use a little dplyr for data manipulation, and a few ggplot2 extension packages, including ggrepel and viridis. 
+# Rather than loading those extensions here, we’ll refer to their functions explicitly, using the :: notation. 
+# This will help make it clear which functions are built into ggplot2, and which come from other packages. 
+# Don’t forget you’ll need to install those packages with install.packages() if you don’t already have them.
+
+library(tidyverse)
+
+# 28.2 Label
+
+# The easiest place start when turning an exploratory graphic into an expository graphic is with good labels.
+# You add labels with the labs() function. This example adds aplot title:
+
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point(aes(color = class)) + 
+  geom_smooth(se = FALSE) + 
+  labs(title = "Fuel efficiency generally decreases with engine size")
+
+# The purpose of a plot title is to summarise the main finding. 
+# Avoid titles that just describe what the plot is, e.g. “A scatterplot of engine displacement vs. fuel economy”.
+
+# If you need to add more text, there are two other useful labels that you can use in ggplot2 2.2.0 and above 
+# (which should be available by the time you’re reading this book):
+  
+# 1. subtitle adds additional detail in a smaller font beneath the title.
+# 2. caption adds text at the bottom right of the plot, often used to describe the source of the data.
+
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point(aes(color = class)) + 
+  geom_smooth(se = FALSE) + 
+  labs(
+    title = "Fuel efficiency generally decreases with engine size",
+    subtitle = "Two seaters (sports cars) are an exception because of their light weight",
+    caption = "Data from fueleconomy.gov"
+  )
+
+# You can also use labs() to replace the axis and legend titles. 
+# It’s usually a good idea to replace short variable names with more detailed descriptions, and to include the units.
+
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point(aes(color = class)) + 
+  geom_smooth(se = FALSE) + 
+  labs(
+    x = "Engine displacement (L)",
+    y = "Highway fuel economy (mpg)",
+    colour = "Car type"
+  )
+
+# It’s possible to use mathematical equations instead of text strings. 
+# Just switch "" out for quote() and read about the available options in ?plotmath:
+
+df <- tibble(
+  x = runif(10),
+  y = runif(10)
+)
+ggplot(df, aes(x, y)) + 
+  geom_point() + 
+  labs(
+    x = quote(sum(x[i] ^ 2, i == 1, n)),
+    y = quote(alpha + beta + frac(delta, theta))
+  )
+
+# 28.2.1 Exercises
+
+# 1. Create one plot on the fuel economy data with customised title, subtitle, caption, x, y, and colour labels.
+
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point(aes(color = class)) + 
+  geom_smooth(se = FALSE) + 
+  labs(
+    title = "Fuel efficiency generally decreases with engine size",
+    subtitle = "Two seaters (sports cars) are an exception because of their light weight",
+    caption = "Data from fueleconomy.gov",
+    x = "Engine displacement (L)",
+    y = "Highway fuel economy (mpg)",
+    colour = "Car type"
+  )
+
+# 2. The geom_smooth() is somewhat misleading because the hwy 
+#    for large engines is skewed upwards due to the inclusion of lightweight sports cars with big engines. 
+#    Use your modelling tools to fit and display a better model.
+
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point(aes(color = class)) + 
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(
+    title = "Fuel efficiency generally decreases with engine size",
+    subtitle = "Two seaters (sports cars) are an exception because of their light weight",
+    caption = "Data from fueleconomy.gov",
+    x = "Engine displacement (L)",
+    y = "Highway fuel economy (mpg)",
+    colour = "Car type"
+  )
+
+# 3. Take an exploratory graphic that you’ve created in the last month, 
+#    and add informative titles to make it easier for others to understand.
+
+
+
+# 28.3 Annotations
+
+# In addition to labelling major components of your plot, it's often useful to label individual observations or groups of observations.
+# The first tool you have at your disposal is geom_text().
+# geom_text() is similar to geom_point(), but it has an additional aesthetic: label.
+# This makes it possible to add textual labels to your plots.
+best_in_class <- mpg %>% 
+  group_by(class) %>% 
+  filter(row_number(desc(hwy)) == 1)
+
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point(aes(color = class)) + 
+  geom_text(aes(label = model), data = best_in_class)
+
+# This is hard to read because the labels overlap with each other, and with the points. 
+# We can make things a little better by switching to geom_label() which draws a rectangle behind the text.
+# We also use the nudge_y parameter to move the labels slightly above the corresponding points:
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point(aes(color = class)) + 
+  geom_label(aes(label = model), data = best_in_class, nudge_y = 2, alpha = .5)
+
+# That helps a bit, but if you look closely in the top-left hand corner, 
+# you’ll notice that there are two labels practically on top of each other. 
+# This happens because the highway mileage and displacement for the best cars in the compact and subcompact categories are exactly the same.
+# There’s no way that we can fix these by applying the same transformation for every label.
+# Instead, we can use the ggrepel package by Kamil Slowikowski.
+# This useful package will automatically adjust labels so that they don’t overlap:
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point(aes(color = class)) + 
+  geom_point(size = 3, shape = 1, data = best_in_class) + 
+  ggrepel::geom_label_repel(aes(label = model), data = best_in_class)
+
+# Note another handy technique used here: I added a second layer of large, hollow points to highlight the points that I’ve labelled.
+
+# You can sometimes use the same idea to replace the legend with labels placed directly on the plot. 
+# It’s not wonderful for this plot, but it isn’t too bad. 
+# (theme(legend.position = "none") turns the legend off — we’ll talk about it more shortly.)
+class_avg <- mpg %>% 
+  group_by(class) %>% 
+  summarise(
+    displ = median(displ),
+    hwy = median(hwy)
+  )
+ggplot(mpg, aes(displ, hwy, color = class)) + 
+  ggrepel::geom_label_repel(aes(label = class),
+     data = class_avg,
+     size = 6,
+     label.size = 0,
+     segment.color = NA
+  ) + 
+  geom_point() + 
+  theme(legend.position = "none")
+
+# Alternatively, you might just want to add a single label to the plot, but you’ll still need to create a data frame. 
+# Often, you want the label in the corner of the plot, 
+# so it’s convenient to create a new data frame using summarise() to compute the maximum values of x and y.
+label <- mpg %>% 
+  summarise(
+    displ = max(displ),
+    hwy = max(hwy),
+    label = "Increasing engine size is \nrelated to decreasing fuel economy."
+  )
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() + 
+  geom_text(aes(label = label), data = label, vjust = "top", hjust = "right")
+
+# If you want to place the text exactly on the borders of the plot, you can use +Inf and -Inf. 
+# Since we’re no longer computing the positions from mpg, we can use tibble() to create the data frame:
+label <- tibble(
+  displ = Inf,
+  hwy = Inf,
+  label = "Increasing engine size is \nrelated to decreasing fuel economy."
+)
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() + 
+  geom_text(aes(label = label), data = label, vjust = "top", hjust = "right")
+
+# In these examples, I manually broke the label up into lines using "\n". 
+# Another approach is to use stringr::str_wrap() to automatically add line breaks, given the number of characters you want per line:
+"Increasing engine size is related to decreasing fuel economy." %>% 
+  stringr::str_wrap(width = 40) %>% 
+  writeLines()
+
+# Note the use of hjust and vjust to control the alignment of the label. Figure 28.1 shows all nine possible combinations.
+
+# 1.00 -|------------------|------------------|------------------|------------------|
+#       | hjust = 'left'   |            hjust = 'center'         |  hjust = 'right' |
+#       | vjust = 'top'    |            vjust = 'top'            |    vjust = 'top' |
+# 0.75 -|------------------|------------------|------------------|------------------|
+#       |                  |                  |                  |                  |
+#       | hjust = 'left'   |            hjust = 'center'         |  hjust = 'right' |
+# 0.50 -|------------------|------------------|------------------|------------------|
+#       | vjust = 'center' |            vjust = 'center'         | vjust = 'center' |
+#       |                  |                  |                  |                  |
+# 0.25 -|------------------|------------------|------------------|------------------|
+#       | hjust = 'left'   |            hjust = 'center'         |  hjust = 'right' |
+#       | vjust = 'bottom' |            vjust = 'bottom'         | vjust = 'bottom' |
+# 0.00 -|------------------|------------------|------------------|------------------|
+#     0.00               0.25               0.50               0.75                1.00
+#
+#                     Figure 28.1: All nine combinations of hjust and vjust.
+
+# Remember, in addition to geom_text(), you have many other geoms in ggplot2 available to help annotate your plot. A few ideas:
+# 1. Use geom_hline() and geom_vline() to add reference lines. 
+#    I often make them thick (size = 2) and white (colour = white), and draw them underneath the primary data layer. 
+#    That makes them easy to see, without drawing attention away from the data.
+# 2. Use geom_rect() to draw a rectangle around points of interest. 
+#    The boundaries of the rectangle are defined by aesthetics xmin, xmax, ymin, ymax.
+# 3. Use geom_segment() with the arrow argument to draw attention to a point with an arrow. 
+#    Use aesthetics x and y to define the starting location, and xend and yend to define the end location.
+
+# The only limit is your imagination (and your patience with positioning annotations to be aesthetically pleasing)!
+
+# 28.3.1 Exercises
+
+# 1. Use geom_text() with infinite positions to place text at the four corners of the plot.
 
 
 
 
+# 2. Read the documentation for annotate(). How can you use it to add a text label to a plot without having to create a tibble?
+  
 
 
 
 
+# 3. How do labels with geom_text() interact with faceting?
+#    How can you add a label to a single facet? 
+#    How can you put a different label in each facet? (Hint: think about the underlying data.)
 
 
 
 
+# 4. What arguments to geom_label() control the appearance of the background box?
+  
 
 
 
-
-
-
-
-
-
-
-
-
-
-
+# 5. What are the four arguments to arrow()? How do they work? 
+#   Create a series of plots that demonstrate the most important options.
 
 
 

@@ -12,4 +12,8 @@ https://www.ggplot2-exts.org/
 # Cheatsheet for R
 http://rstudio.com/cheatsheets
 
+# Happy Git with R
+http://happygitwithr.com
 
+# Git and GitHub
+ http://r-pkgs.had.co.nz/git.html

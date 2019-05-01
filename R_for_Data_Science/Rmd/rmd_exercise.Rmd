@@ -43,7 +43,7 @@ Links and Images
 At the bottom of the document:
 [id]: http://example.com/ "Title"
 
-![optional caption text](../R_for_Data_Science/data-science-wrangle.png)
+![optional caption text](../../R_for_Data_Science/data-science-wrangle.png)
 
 Tables
 -------------------------------------------------------------------
@@ -108,10 +108,22 @@ If you forget, you can get to a handy reference sheet with Help > Markdown Quick
 
 
 
+```{r, eval = FALSE}
+summary(diamonds)
+```
 
 
+```{r}
+mtcars[1:5, ]
+```
 
 
+```{r}
+knitr::kable(
+  mtcars[1:5, ],
+  caption = "A knitr kable."
+)
+```
 
 
 
