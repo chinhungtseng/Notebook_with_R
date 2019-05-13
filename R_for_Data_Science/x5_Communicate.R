@@ -924,7 +924,196 @@ ggplot(mpg, aes(displ, hwy)) +
 
 
 # 5. What are the four arguments to arrow()? How do they work? 
-#   Create a series of plots that demonstrate the most important options.
+#    Create a series of plots that demonstrate the most important options.
+
+
+
+
+
+
+
+# 28.4 Scles
+
+# The third way you can make your plot better for comunication is to adjust th scales.
+# Scales control the mapping from data values to thing that you can perceive.
+# Normally, ggplot2 automatically adds scales for you. For example, then you type:
+
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point(aes(color = class))
+
+# ggplot2 automatically adds default scales behind the scenes:
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point(aes(color = class)) + 
+  scale_x_continuous() + 
+  scale_y_continuous() +
+  scale_color_discrete()
+
+# Note the naming scheme for scales: scale_ followed by th ename of the aesthetic, then _ , then the name of the scale.
+# The default scales are named according to the type of variable they align with: contiuous, discrete, datetime, or date.
+# There are lots of non-dejault scales which you'll learn about below.
+
+# The default scales have been carefully chosen to do a good job for a wide range of inputs.
+# Nevertheless, you might want to override the defaults for two reasons:
+# 1. You might wnat to tweak some of the parameters of the default scales.
+#    This allows you to do thing like change the breaks on the axes, or the key labels on the legend.
+# 2. You might want to replace the scale altogether, and use a completely different algorithm.
+#    Often you can do better than the default because you know more about the data.
+
+# 28.4.1 Axis ticks and legend keys
+
+# There are two primary arguments that affect the appearance of the ticks on the axes and the key on the legend: breaks and labels.
+# Breaks controls the position of the ticks, or the values associated with the keys.
+# Labels controls the text label associated with each tick/key.
+# The most common use of breaks is to override the default choice:
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() + 
+  scale_y_continuous(breaks = seq(15, 40, by = 5))
+
+# You can use labels in the same way (a character vector the same length as breaks), but you can also set it to NULL to suppress the labels altogether.
+# This is useful for maps, or for publishing plots where you can't share the absolute numbers.
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() + 
+  scale_x_continuous(labels = NULL) + 
+  scale_y_continuous(labels = NULL)
+
+# You can also use breaks and labels to control the appearance of legends. Collectively axes and legends are called guides.
+# Axes are used for x and y aesthetics; legends are used for everything else.
+
+# Another use of breaks is when you have relatively few data points and want to highlihgt exactly where the observations occur.
+# take this plot that shows when each US president started and ended their term.
+presidential %>% 
+  mutate(id = 33 + row_number()) %>% 
+  ggplot(aes(start, id)) + 
+  geom_point() + 
+  geom_segment(aes(xend = end, yend = id)) + 
+  scale_x_date(NULL, breaks = presidential$start, date_labels = "'%y")
+
+# Note that the specification of breaks and labels for date and datetiem scales is a little different:
+# 1. date_labels takes a format specification, in the same form as parse_datetime().
+# 2. date_breaks (not shown here), takes a string like "2 days" or "1 month".
+
+# 28.4.2 Legend layout
+
+# You will most often use breaks and labels to tweak the axes. While they both also work for legends, 
+# there are a few other techniques you are more likely to use.
+
+# To control the overall position of the legend, you need to use a theme() setting.
+# We'll come back to themes at the end of the chapter, but in brief, they control the non-data parts of the plot.
+# The theme setting legend.position controls where the legend is drawn:
+base <- ggplot(mpg, aes(displ, hwy)) + 
+  geom_point(aes(color = class))
+
+base + theme(legend.position = "left")
+base + theme(legend.position = "top")
+base + theme(legend.position = "bottom")
+base + theme(legend.position = "right") # the default
+
+# You can also use legend.potition = "none" to suppress the display of the legend altogether.
+
+# To control the display of individual legends, use guides() along with giude_legend() or guide_colourbar()
+# The following example shows two important settings: controlling the number of rows the legend used with nrow, 
+# and overriding one of the aesthetics to make the points bigger.
+# This is particularly useful if you have used a low alpha to display many points on a plot.
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point(aes(color = class)) + 
+  geom_smooth(se = FALSE) + 
+  theme(legend.position = "bottom") + 
+  guides(color = guide_legend(nrow = 1, override.aes = list(size = 4)))
+
+# 28.4.3 Replacing a scale
+
+# Instead of just tweaking the details a little, you can instead replace the scale altogether.
+# There are two types of scales you're mostly likely to want to switch out: continuous position scales and color scales.
+# Fortunately, the same principles apply to all the other aesthetics, so once you've mastered position and color, 
+# you'll be able to quickly pick up other scale replacements.
+
+# It's very useful to plot transformations of your variable.
+# For exmaple, as we've seen in diamond prices it's easier to see the precise relationship between carat and price if we log transform them:
+ggplot(diamonds, aes(carat, price)) + 
+  geom_bin2d()
+
+ggplot(diamonds, aes(log10(carat), log10(price))) + 
+  geom_bin2d()
+
+# However, the disadvantage of this transformation is that the axes are now labelled with the transformed values, 
+# making it hard to interpret the plot.
+# Instead of doing the transformation in the aesthetic mapping, we can instead do it with the scale.
+# This is visually identical, except the axes are labelled on the original data scales.
+ggplot(diamonds, aes(carat, price)) + 
+  geom_bin2d() + 
+  scale_x_log10() + 
+  scale_y_log10()
+
+# Another scale that is frequently customised is color. 
+# The default categorical scale picks colors that are evenly spaced around the color wheel.
+# Useful alternatives are the ColorBrewer scales which have been hand tuned to work better for people with common types of color blindness.
+# The two plots below look similar,
+# but there is enough difference in the shades of red and green that the dots on the right can be distinguished even by people with red-green color blindness.
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point(aes(color = drv))
+
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(color = drv)) + 
+  scale_color_brewer(palette = "Set1")
+
+# Don't forget simpler techniques. If there are just a few colors, you can add a redundant shape mapping.
+# This will also help ensure your plot is interpretable in black and white.
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point(aes(color = drv, shape = drv)) + 
+  scale_color_brewer(palette = "Set1")
+
+# The ColorBrewer scales are documented online at http://colorbrewer2.org/ and made available in R via the RColorBrewer package, by Erich Neuwirth.
+# Figure 28.2 shows the complete list of all palettes.
+# The sequential (top) and diverging (bottom) palettes are particularly useful if your categorical values are ordered, or have a "middle".
+# This often arises if you've used cut() to make a continuous variable into a categorical variable.
+
+# When you have a predefined mapping between values and colors, use scale_color_manual().
+# For exmaple, if we map presidential party to color, we want to use the standard mapping of red for Republicans and blue for Democrats:
+presidential %>% 
+  mutate(id = 33 + row_number()) %>% 
+  ggplot(aes(start, id, color = party)) + 
+  geom_point() + 
+  geom_segment(aes(xend = end, yend = id)) + 
+  scale_color_manual(values = c(Republican = "red", Democratic = "blue"))
+
+# For continuous color, you can use the built-in scale_color_gradient() or scale_fill_gradient().
+# If you have a diverging scale, you can use scale_color_gradient2().
+# That allows you to give, for example, positive and negative values different colors.
+# That's sometimes also useful if you want to distinguish points above or below the mean.
+
+# Another option is scale_color_virides() provided by the viridis pabkage.
+# It's a continuous analog of the categorical ColorBrewer scales.
+# The designers, Nathaniel Stéfan van der Walt, carefully tailored a continuous color scheme that has good perceptual properties.
+# Here's an example from the viridis vignette.
+df <- tibble(
+  x = rnorm(10000),
+  y = rnorm(10000)
+)
+
+ggplot(df, aes(x, y)) + 
+  geom_hex() + 
+  coord_fixed()
+
+ggplot(df, aes(x, y)) + 
+  geom_hex() + 
+  viridis::scale_fill_viridis() + 
+  coord_fixed()
+
+# Note that all color scales come in two variety: scale_color_x() and scale_fill_x() for the color and fill aesthetics respectively
+# (the color scales are available in both UK and US spellings).
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
