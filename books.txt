@@ -1,19 +1,31 @@
-# Books
-## 1. Hands-On Programming with R
-## 2. R for Data Science
-## 3. Advenced R
-## 4. Others...
+# Books (https://bookdown.org)
 
-https://bookdown.org
+# Hands-On Programming with R
+https://rstudio-education.github.io/hopr/
+
+# R for Data Science
+https://r4ds.had.co.nz
+
+# Advenced R
+https://bookdown.org/home/tags/advanced-r/
 
 # Visualization: geom extension packages
 https://www.ggplot2-exts.org/
-
-# Cheatsheet for R
-http://rstudio.com/cheatsheets
 
 # Happy Git with R
 http://happygitwithr.com
 
 # Git and GitHub
- http://r-pkgs.had.co.nz/git.html
+http://r-pkgs.had.co.nz/git.html
+ 
+# bookdown: Authoring Books and Technical Documents with R Markdown
+https://bookdown.org/yihui/bookdown/
+
+# R Markdown: The Definitive Guide
+https://bookdown.org/yihui/rmarkdown/
+
+# blogdown: Creating Websites with R Markdown
+https://bookdown.org/yihui/rmarkdown/books.html
+
+# Text Mining with R
+https://tidytextmining.com/
