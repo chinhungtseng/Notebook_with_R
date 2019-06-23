@@ -1,6 +1,42 @@
 # Notebook_with_R
 
-1. Hands on programming with R
-2. R for Data Science
+## Hands-On Programming with R
+https://rstudio-education.github.io/hopr/ [read]
+
+## R for Data Science
+https://r4ds.had.co.nz [read]
+
+## The tidyverse style guide
+https://style.tidyverse.org [read]
+
+## Tidy evaluation
+https://tidyeval.tidyverse.org [read half]
+
+## Tidyverse design principles
+https://principles.tidyverse.org
+
+## Advenced R
+https://bookdown.org/home/tags/advanced-r/
+
+## Visualization: geom extension packages
+https://www.ggplot2-exts.org/
+
+## Happy Git with R
+http://happygitwithr.com [read]
+
+## Git and GitHub
+http://r-pkgs.had.co.nz/git.html
+ 
+## bookdown: Authoring Books and Technical Documents with R Markdown
+https://bookdown.org/yihui/bookdown/ [read]
+
+##R Markdown: The Definitive Guide
+https://bookdown.org/yihui/rmarkdown/ [read]
+
+## blogdown: Creating Websites with R Markdown
+https://bookdown.org/yihui/rmarkdown/books.html [read]
+
+## Text Mining with R
+https://tidytextmining.com/
 
 
