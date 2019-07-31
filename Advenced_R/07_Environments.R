@@ -18,18 +18,31 @@ set.seed(1014)
 
 # 1. List at least three ways that an envionment differs from a list.
 
+# There are four ways: 
+
+# (1) ever object in an environment must have a name;
+# (2) order doesn't matter;
+# (3) environments have parents;
+# (4) environments have reference semantics.
 
 # 2. What is the parent of the global envionment? What is the only envionments that doesn't have a parnet?
 
+# The parent of the global environment is the last package that you loaded.
+# The only environment that doesn't have a parent is the empty environment.
 
 # 3. What is the enclosing envionment of a function? Why is it important?
 
+# The enclosing environment of a function is the environment where it was created.
+# It determines where a function looks for variables.
 
 # 4. How do you determine the envionment from which a function was called?
 
+# Use `caller_env()` or `parent.frame()`.
 
 # 5. How are `<-` and `<<-` different?
 
+# `<-` always creates a binding in the current environment;
+# `<<-` rebinds an existing name in a parent of the current environment, 
 
 # Outline 
 
@@ -726,300 +739,250 @@ plus_one
 plus_one(2)
 #> [1] 3
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# You'll learn more about function factories in Section 10.2.
+
+# 7.4.5 Exercises
+
+# 1. How is `search_envs()` different from `env_parents(global_env())`?
+
+# `search_envs()` returns all the environments on the search path.
+# "The search path is a chain of environments containing exported functions is attached packages" (from `?search_envs`).
+# Every time you attach a new package, this search path will grow.
+# The search path ends with the base-environment.
+# The global environment is included, because functions present in the global environment will always be part of the search path.
+search_envs()
+#>  [[1]] $ <env: global>
+#>  [[2]] $ <env: package:rlang>
+#>  [[3]] $ <env: tools:rstudio>
+#>  [[4]] $ <env: package:stats>
+#>  [[5]] $ <env: package:graphics>
+#>  [[6]] $ <env: package:grDevices>
+#>  [[7]] $ <env: package:utils>
+#>  [[8]] $ <env: package:datasets>
+#>  [[9]] $ <env: package:methods>
+#> [[10]] $ <env: Autoloads>
+#> [[11]] $ <env: package:base>
+
+# `env_parents(global_env())` will list all the ancestors of the global environment, 
+# therefore the global environment itself is not included.
+# This also incluedes the "ultimate ancestor", the empty environment.
+# This environment is not considered part of the search path because it contains no ogjects.
+
+# 2. Draw a diagram that shows the enclosing environemnts of this function:
+f1 <- function(x1) {
+  f2 <- function(x2) {
+    f3 <- function(x3) {
+      x1 + x2 + x3
+    }
+    f3(3)
+  }
+  f2(2)
+}
+f1(1)
+
+# 3. Write an enhanced version of `str()` that proivdes more information about functions.
+#    Show where the function was found and what environment it was defined in.
+
+# To solve this problem, we need to write a function that takes the name of a function and look for that function returning both the function and the environment that it was found in.
+fget2 <- function(name, env = caller_env()) {
+  # base case
+  if (env_has(env, name)) {
+    obj <- env_get(env, name)
+    if (is.function(obj)) {
+      return(list(fun = obj, env = env))
+    }
+  }
+  
+  if (identical(env, empty_env())) {
+    stop("Could not find function called \"", name, "\"", call. = FALSE)
+  } 
+  # recurisive case
+  fget2(name, env_parent(env))
+}
+
+fstr <- function(fun_name, env = caller_env()) {
+  if (!is.character(fun_name) && length(fun_name) == 1) {
+    stop("`fun_name` must be a string", call. = FALSE)
+  }
+  fun_env <- fget2(fun_name, env)
+  
+  list(
+    where = fun_env$env,
+    enclosing = fn_env(fun_env$fun)
+  )
+}
+
+# Once you have learned about tidyeval, you could rewrite `fstr()` to use `enquo()` so that you'd call it like more like `str()`, i.e. `fstr(sum)`.
+
+# 7.4 The call stack
+
+# There is one last environment we need to explain, the __caller__ environment, accessed with `rlang::caller_env()`.
+# This provides the environment from which the function was called, and hence varies based on how the function is called, not how the function was created.
+# As we saw above this is a useful default whenever you write a function that takes an environment as an argument.
+
+####### In base R #######
+# `parent.frame()` is equivalent to `caller_env()`; just note that it returns an environment, not a frame.
+#########################
+
+# To fully understand the caller environment we need to discuss two related concepts: the __call stack__, which is make up of __frames__.
+# Excuting a function creates two types of context.
+# You've learned about one already: the execution environment is a child of the function environment, 
+# which is determined by where the function was created.
+# There's another type of context created by where the function was called: this is called the call stack.
+
+# 7.5.1 Simple call stacks
+
+# Let's illustrate this with a simple sequence of calls: `f()` calls `g()` calls `h()`.
+f <- function(x) {
+  g(x = 2)
+}
+g <- function(x) {
+  h(x = 3)
+}
+h <- function(x) {
+  stop()
+}
+
+# The way you most commonly seea call stack in R is by looking at the `traceback()` after an error has occurred:
+f(x = 1)
+#>  Error in h(x = 3) :
+traceback()
+#> 4: stop()
+#> 3: h(x = 3) 
+#> 2: g(x = 2)
+#> 1: f(x = 1)
+
+# Instead of `stop()` + `traceback()` to understand the call stack, we're going to use `lobstr::cst()` to print out the call stack tree:
+h <- function(x) {
+  lobstr::cst()
+}
+f(x = 1)
+#> █
+#> └─f(x = 1)
+#>   └─g(x = 2)
+#>     └─h(x = 3)
+#>       └─lobstr::cst()
+
+# This shows us that `cst()` was called form `h()`, which was called form `g()`, which was called from `f()`.
+# Note that the order is the opposite from `traceback()`.
+# As the call stacks get more complicated, I think it's easier to understand teh seqence of calls if you start from the begining, rather than the end (i.e.`f()` calls `g()`; rather than `g()` was called by `f()`).
+
+# 7.5.2 Lazy evaluation
+
+# The call stack above is simple: while you get a hint that there's some tree-like sturcture involved, everything happens on a single branch.
+# This is typical of a call stack when all argument are eagerly evaluated.
+
+# Let's create a more complicated example that involves some lazy evaluation.
+# We'll create a sequence of functions, `a()`, `b()`, `c()`, that pass along an argument `x`.
+a <- function(x) b(x)
+b <- function(x) c(x) 
+c <- function(x) x
+
+a(f())
+#> █
+#> ├─a(f())
+#> │ └─b(x)
+#> │   └─c(x)
+#> └─f()
+#>   └─g(x = 2)
+#>     └─h(x = 3)
+#>       └─lobstr::cst()
+
+# `x` is laily evaluated so this tree gets two branches.
+# In the first branch `a()` calls `b()`, then `b()` calls `c()`.
+# The second branch starts when `c()` evaluates its argument `x`.
+# This argument is evaluated in a new branch because the rnvironment in which it is evaluated is the global environment,
+# not the environment of `c()`.
+
+# 7.5.3 Frames 
+
+# Each element of the call stack is a __frame__, also known as an evaluation context.
+# The frae is an extremely important internal data structure, and R code can only access a small part of the ata structure because tampering with it will break R.
+# A frame has threee key components:
+
+# - An expression (labelled with `expr`) giveing the function call.
+#   This is what `traceback()` prints out.
+
+# - An environment (labelled with `evn`), which is typically the execution environment of a function.
+#   There are two main exceptions: the environment of the global frame is the global environment, 
+#   and calling `eval()` also generates frames, where the environment can be anything.
+
+# - A parent, the previous call in the call stack (shown by a grey arrow).
+
+# Figure 7.2 illustrate the stack for the call to `f(x = 1)` shown in Section 7.5.1.
+
+# (To focus on the calling environemnts, I have ommited the bindings in the goabal environment from `f`, `g`, and `g` to the respective function objects.)
+
+# The frame also holds exit handlers created with `on.exit()`, restarts and handlers for the condition system, 
+# and which context to `return()` to when a function completes.
+# These are important internal details that are not accessible with R code.
+
+# 7.5.4 Dynamic scope
+
+# Looking up variables in the calling stack rather than in the enclosing environment is called __dynamic scoping__.
+# Few laguages impliment dynamic scoping (Emacs Lisp is a notable exception.)
+# This is because dynamic scoping makes it much harder to reastion about how a function operates: not only do you know how it was defined, 
+# you also need to know the context in which it was called.
+# Dynamic scoping is primarily useful for developing functions that aid interactive data analysis, and one of the topic discussed in Cahpter 20.
+
+# 7.5.5 Exercises
+
+# 1. Write a function that lists all the variables defined in the environment in which it was called.
+#    It should return the same results as `ls()`.
+
+# We can implement this dynamic scoping behaviour, by explicitly referencing the caller environment.
+# Please not, that this approach returns also variables starting with a dot, an option that `ls()` usually require.
+
+ls2 <- function(env = caller_env()) {
+  env_names(env)
+}
+ls2()
+
+ls(all.names = TRUE)
+#>  [1] ".Random.seed" "a"            "b"            "c"            "f"            "f1"          
+#> [7] "fget2"        "fstr"         "g"            "h"            "ls2"          "objs" 
+
+ls2()
+#> [1] "fget2"        "a"            "objs"         "b"            "c"            ".Random.seed"
+#> [7] "f"            "ls2"          "g"            "h"            "fstr"         "f1" 
+
+# Test in "sandbox" environment 
+e1 <- env(a = 1, b = 2)
+invoke(ls, .env = e1)
+#> [1] "a" "b"
+invoke(ls2, .env = e1)
+#> [1] "a" "b"
+
+# 7.6 As data structures
+
+# As well as powering scoping, environments are also useful data structures in their own right because they have reference semantics.
+# There are three common problems that they can help solve:
+
+# - Avoiding copies of large data. Since environments have reference semantics, you'll never accidentally create a copy.
+#   But bare environments are painful to work with, wo instad I recommend using R6 objects, 
+#   which are built on top of environments. Learn more in Chapter 14.
+
+# - Managing state within a package. Explicit environments are useful in packages because they allow you to maintain state across function calls.
+#   Normally, objects in a package are locked, so you can't modify them directly.
+#   Instead, you can do something like this:
+my_env <- new.env(parent = emptyenv())
+my_env$a <- 1
+
+get_a <- function() {
+  my_env$a
+}
+set_a <- function(value) {
+  old <- my_env$a
+  my_env$a <- value
+  invisible(old)
+}
+# Returning the old value from setter functions is a good pattern because it makes it easier to reset the previous value in conjunction with `on.exit()`(Section 6.7.4).
+
+# - AS a hashmap. A hashmap is a data stuctrure that takes constant, O(1), time to find an object based on its name.
+#   Environments provide this behaviour by default, so can used to simulate a hashmap.
+#   See the hash package (Brown 2013) for a complete development of this idea.
+
+# References
+
+# Brown, Christopher. 2013. Hash: Full Feature Implementation of Hash/Associated Arrays/Dictionaries.
+# https//CRAN.R-project.org/package=hash.
